@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Student Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar {
+            min-height: 100vh;
+            background-color: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            background-size: cover;
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.8);
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
+        }
+        .card-counter {
+            border-left: 4px solid;
+        }
+        .card-primary { border-left-color: #4e73df; }
+        .card-success { border-left-color: #1cc88a; }
+        .card-info { border-left-color: #36b9cc; }
+        .card-warning { border-left-color: #f6c23e; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Student Panel</small>
+            </div>
+            <hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/student/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/student/attendance"><i class="bi bi-calendar-check me-2"></i>My Attendance</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/student/assignments"><i class="bi bi-file-earmark-text me-2"></i>Assignments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/student/exams"><i class="bi bi-journal-check me-2"></i>Exams</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/student/projects"><i class="bi bi-code-square me-2"></i>Projects</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/student/certificates"><i class="bi bi-journal-bookmark-fill me-2"></i>Certificates</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/student/payments"><i class="bi bi-credit-card me-2"></i>Payments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/announcements"><i class="bi bi-megaphone me-2"></i>Broadcasts</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/verify-certificate"><i class="bi bi-shield-check me-2"></i>Public Verify</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Student Dashboard</h1>
+                <div class="btn-toolbar mb-2 mb-md-0 d-flex align-items-center gap-3">
+                    <!-- Notification Bell Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary position-relative" type="button" id="notifDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" onclick="fetchNotificationsList()">
+                            <i class="bi bi-bell-fill"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifCountBadge">
+                                0
+                            </span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow p-2" aria-labelledby="notifDropdownBtn" style="width: 320px; max-height: 400px; overflow-y: auto;" id="notifDropdownList">
+                            <li class="text-center py-2 text-muted small">Loading notifications...</li>
+                        </ul>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#changePasswordModal"><i class="bi bi-key me-1"></i>Change Password</button>
+                    <span class="badge bg-primary px-3 py-2 fs-6" id="studentName">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Enrollment Alert Container -->
+            <div id="enrollmentAlertContainer" style="display:none;" class="mb-4"></div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card card-counter card-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Attendance</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="attRate">0%</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-calendar-check fs-2 text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card card-counter card-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">My Assignments</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="assignmentCount">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-file-earmark-text fs-2 text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card card-counter card-info shadow h-100 py-2">
+                        <div class="col-body">
+                            <div class="row no-gutters align-items-center p-3">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Upcoming Exams</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="examCount">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-journal-check fs-2 text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card card-counter card-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Certificates</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="certCount">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-patch-check fs-2 text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Courses Catalog -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-book me-2"></i>Available Courses Catalog</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row" id="coursesCatalogContainer">
+                                <div class="text-center py-3"><div class="spinner-border text-primary spinner-border-sm"></div> Loading catalog...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enroll Modal -->
+            <div class="modal fade" id="enrollModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Enroll in Course</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <input type="hidden" id="enrollCourseId">
+                    <div class="mb-3">
+                        <label class="fw-bold">Course Title</label>
+                        <div id="enrollCourseTitle" class="fs-5 text-dark"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="fw-bold">Course Fee</label>
+                        <div id="enrollCourseFee" class="fs-5 text-success"></div>
+                    </div>
+                    <div class="alert alert-info py-2 small mb-3">
+                        <i class="bi bi-info-circle me-1"></i><strong>Batch Assignment:</strong> After payment is confirmed, the administrator will assign you to an active batch.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Select Payment Plan</label>
+                        <select class="form-select" id="enrollPaymentMethod" onchange="toggleEmiInput()">
+                            <option value="FULL">Full Payment</option>
+                            <option value="EMI">EMI (Monthly Installments)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="emiCountGroup">
+                        <label class="form-label fw-bold">EMI Duration</label>
+                        <select class="form-select" id="enrollEmiCount">
+                            <option value="3">3 Months EMI</option>
+                            <option value="6">6 Months EMI</option>
+                            <option value="12">12 Months EMI</option>
+                        </select>
+                        <small class="text-muted">Total course fee will be divided equally over the selected months.</small>
+                    </div>
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary" onclick="submitEnrollmentRequest()">Confirm & Proceed to Pay</button></div>
+            </div></div></div>
+
+            <!-- Change Password Modal -->
+            <div class="modal fade" id="changePasswordModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title"><i class="bi bi-key me-2"></i>Change Password</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div id="pwdAlert" class="alert d-none py-2 small"></div>
+                    <form id="pwdForm" onsubmit="submitChangePassword(event)">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Current Password</label>
+                            <input type="password" class="form-control" id="currPwd" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">New Password</label>
+                            <input type="password" class="form-control" id="newPwd" minlength="6" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confPwd" minlength="6" required>
+                        </div>
+                        <button type="submit" id="pwdBtn" class="btn btn-primary w-100">Update Password</button>
+                    </form>
+                </div>
+            </div></div></div>
+
+            <!-- Profile & Enrolled Batches -->
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-person-bounding-box me-2"></i>My Profile</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><strong>Reg No:</strong> <span id="profReg">Loading...</span></p>
+                            <p class="mb-2"><strong>Email:</strong> <span id="profEmail">Loading...</span></p>
+                            <p class="mb-2"><strong>Phone:</strong> <span id="profPhone">Loading...</span></p>
+                            <p class="mb-2"><strong>Qualification:</strong> <span id="profQual">Loading...</span></p>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mt-4">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-camera-video me-2"></i>Upcoming Class Meetings</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <ul class="list-group list-group-flush" id="meetingsList">
+                                <li class="list-group-item text-center text-muted small py-3">Loading meetings...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-collection me-2"></i>My Enrolled Batches</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    <thead>
+                                    <tr>
+                                        <th>Batch Name</th>
+                                        <th>Course</th>
+                                        <th>Trainer</th>
+                                        <th>Dates</th>
+                                        <th>Meeting Link</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="studentBatchesTable">
+                                    <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Materials Modal -->
+            <div class="modal fade" id="viewMaterialsModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="viewMaterialsModalLabel">Course Learning Materials</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            <ul class="list-group list-group-flush" id="viewMaterialsList">
+                                <li class="list-group-item text-center text-muted">No materials available.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let coursesList = [];
+
+    async function loadCourses() {
+        try {
+            const res = await fetch('/api/student/courses');
+            if (res.ok) {
+                coursesList = await res.json();
+                const container = document.getElementById('coursesCatalogContainer');
+                container.innerHTML = '';
+                if (coursesList.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-center text-muted">No courses available at the moment.</div>';
+                    return;
+                }
+                coursesList.forEach(c => {
+                    container.innerHTML += `
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-left-primary">
+                                <div class="card-body d-flex flex-column justify-content-between">
+                                    <div>
+                                        <h5 class="font-weight-bold text-dark">${c.name}</h5>
+                                        <p class="text-muted text-sm text-truncate-3" style="font-size:0.85rem; max-height:60px; overflow:hidden;">${c.description||'No description available.'}</p>
+                                        <p class="mb-1 text-sm"><strong>Duration:</strong> ${c.duration||'-'}</p>
+                                        <p class="mb-3 text-success font-weight-bold">Fee: Rs. ${(c.fee||0).toFixed(2)}</p>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" onclick="openEnroll(${c.id})"><i class="bi bi-person-plus-fill me-1"></i>Enroll Now</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        } catch(e) {
+            console.error('Error loading courses:', e);
+        }
+    }
+
+    async function openEnroll(courseId) {
+        const course = coursesList.find(c => c.id === courseId);
+        if (!course) return;
+        document.getElementById('enrollCourseId').value = course.id;
+        document.getElementById('enrollCourseTitle').innerText = course.name;
+        document.getElementById('enrollCourseFee').innerText = 'Rs. ' + (course.fee||0).toFixed(2);
+        document.getElementById('enrollPaymentMethod').value = 'FULL';
+        toggleEmiInput();
+        new bootstrap.Modal(document.getElementById('enrollModal')).show();
+    }
+
+    function toggleEmiInput() {
+        const method = document.getElementById('enrollPaymentMethod').value;
+        const group = document.getElementById('emiCountGroup');
+        if (method === 'EMI') {
+            group.classList.remove('d-none');
+        } else {
+            group.classList.add('d-none');
+        }
+    }
+
+    async function submitEnrollmentRequest() {
+        const courseId = document.getElementById('enrollCourseId').value;
+        const method = document.getElementById('enrollPaymentMethod').value;
+        const emiCount = document.getElementById('enrollEmiCount').value;
+
+        try {
+            const res = await fetch(`/api/student/courses/${courseId}/enroll?paymentMethod=${method}&emiCount=${method==='EMI'?emiCount:''}`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                const enrollment = await res.json();
+                bootstrap.Modal.getInstance(document.getElementById('enrollModal')).hide();
+                window.location.href = `/student/payment-checkout?paymentId=${enrollment.pendingPaymentId}`;
+            } else {
+                const err = await res.json();
+                alert(err.message || 'Enrollment request failed');
+            }
+        } catch(e) {
+            console.error('Error enrolling:', e);
+            alert('Failed to submit enrollment request');
+        }
+    }
+
+    async function submitChangePassword(e) {
+        e.preventDefault();
+        const curr = document.getElementById('currPwd').value;
+        const newP = document.getElementById('newPwd').value;
+        const confP = document.getElementById('confPwd').value;
+        const alertBox = document.getElementById('pwdAlert');
+        alertBox.className = 'alert d-none py-2 small';
+
+        if (newP !== confP) {
+            alertBox.className = 'alert alert-danger py-2 small';
+            alertBox.innerText = 'New passwords do not match.';
+            alertBox.classList.remove('d-none');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/student/change-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword: curr, newPassword: newP, confirmNewPassword: confP })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alertBox.className = 'alert alert-success py-2 small';
+                alertBox.innerText = data.message || 'Password changed successfully!';
+                alertBox.classList.remove('d-none');
+                setTimeout(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+                    document.getElementById('pwdForm').reset();
+                    alertBox.classList.add('d-none');
+                }, 1500);
+            } else {
+                alertBox.className = 'alert alert-danger py-2 small';
+                alertBox.innerText = data.message || 'Failed to change password.';
+                alertBox.classList.remove('d-none');
+            }
+        } catch(err) {
+            alertBox.className = 'alert alert-danger py-2 small';
+            alertBox.innerText = 'Network error. Please try again.';
+            alertBox.classList.remove('d-none');
+        }
+    }
+
+    async function fetchNotificationsList() {
+        try {
+            const res = await fetch('/api/notifications');
+            if (res.ok) {
+                const notifications = await res.json();
+                const list = document.getElementById('notifDropdownList');
+                list.innerHTML = '';
+                
+                const unreadCount = notifications.filter(n => !n.read).length;
+                const badge = document.getElementById('notifCountBadge');
+                if (unreadCount > 0) {
+                    badge.innerText = unreadCount;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+                
+                if (notifications.length === 0) {
+                    list.innerHTML = '<li class="text-center py-2 text-muted small">No notifications</li>';
+                    return;
+                }
+                
+                if (unreadCount > 0) {
+                    list.innerHTML += `
+                        <li class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                            <span class="small fw-bold">Notifications</span>
+                            <button class="btn btn-link btn-sm text-decoration-none p-0 small" onclick="markAllAsRead(event)">Mark all as read</button>
+                        </li>
+                    `;
+                } else {
+                    list.innerHTML += `<li class="border-bottom pb-2 mb-2"><span class="small fw-bold">Notifications</span></li>`;
+                }
+                
+                notifications.forEach(n => {
+                    const readClass = n.read ? 'text-muted' : 'fw-bold text-dark';
+                    const bgClass = n.read ? '' : 'bg-light';
+                    list.innerHTML += `
+                        <li class="p-2 border-bottom ${bgClass} rounded mb-1 position-relative" style="font-size:0.85rem;">
+                            <div class="${readClass}">${n.title}</div>
+                            <div class="text-muted small my-1" style="font-size:0.75rem; white-space: normal; word-wrap: break-word;">${n.message}</div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="text-muted small" style="font-size:0.7rem;">${new Date(n.createdAt).toLocaleDateString()}</span>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm text-primary p-0 me-2" onclick="toggleReadStatus(event, ${n.id}, ${n.read})" title="${n.read ? 'Mark as Unread' : 'Mark as Read'}">
+                                        <i class="bi ${n.read ? 'bi-envelope' : 'bi-envelope-open'}"></i>
+                                    </button>
+                                    <button class="btn btn-sm text-danger p-0" onclick="removeNotification(event, ${n.id})" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    `;
+                });
+            }
+        } catch (e) {
+            console.error('Error fetching notifications:', e);
+        }
+    }
+
+    async function toggleReadStatus(event, id, currentRead) {
+        if (event) event.stopPropagation();
+        try {
+            const url = currentRead ? `/api/notifications/${id}/unread` : `/api/notifications/${id}/read`;
+            const res = await fetch(url, { method: 'POST' });
+            if (res.ok) {
+                fetchNotificationsList();
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    async function removeNotification(event, id) {
+        if (event) event.stopPropagation();
+        if (!confirm('Are you sure you want to delete this notification?')) return;
+        try {
+            const res = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                fetchNotificationsList();
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    async function markAllAsRead(event) {
+        if (event) event.stopPropagation();
+        try {
+            const res = await fetch('/api/notifications/read-all', { method: 'POST' });
+            if (res.ok) {
+                fetchNotificationsList();
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    async function loadDashboard() {
+        try {
+            const res = await fetch('/api/student/dashboard');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.profile) {
+                    document.getElementById('studentName').innerText = data.profile.name || 'Student';
+                    document.getElementById('profReg').innerText = data.profile.registrationNumber || 'N/A';
+                    document.getElementById('profEmail').innerText = data.profile.email || 'N/A';
+                    document.getElementById('profPhone').innerText = data.profile.phone || 'N/A';
+                    document.getElementById('profQual').innerText = data.profile.qualification || 'N/A';
+                }
+
+                document.getElementById('attRate').innerText = (data.attendancePercentage || 0) + '%';
+                document.getElementById('assignmentCount').innerText = data.assignmentCount || 0;
+                document.getElementById('examCount').innerText = data.examCount || 0;
+                document.getElementById('certCount').innerText = data.certificateCount || 0;
+
+                // Load notification count
+                try {
+                    const ncRes = await fetch('/api/notifications/unread-count');
+                    if (ncRes.ok) {
+                        const ncData = await ncRes.json();
+                        const badge = document.getElementById('notifCountBadge');
+                        if (ncData.unreadCount > 0) {
+                            badge.innerText = ncData.unreadCount;
+                            badge.classList.remove('d-none');
+                        } else {
+                            badge.classList.add('d-none');
+                        }
+                    }
+                } catch(e) { console.error(e); }
+
+                 const tbody = document.getElementById('studentBatchesTable');
+                if (data.enrollments && data.enrollments.length > 0) {
+                    tbody.innerHTML = '';
+                    data.enrollments.forEach(e => {
+                        const hasBatch = e.batchId !== null;
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>
+                                    ${hasBatch ? e.batchName : '<span class="badge bg-warning text-dark">Not Assigned Yet</span>'}
+                                    ${hasBatch ? `<button type="button" class="btn btn-sm btn-link text-decoration-none py-0 px-1 text-warning fw-bold" onclick="viewCourseMaterials(${e.courseId}, '${e.courseName.replace(/'/g, "\\'")}')" title="View Materials"><i class="bi bi-file-earmark-arrow-down-fill"></i> Materials</button>` : ''}
+                                </td>
+                                <td>${e.courseName}</td>
+                                <td>${hasBatch ? (e.trainerName || 'Unassigned') : 'N/A'}</td>
+                                <td>${hasBatch ? `${e.startDate || 'N/A'} to ${e.endDate || 'N/A'}` : 'N/A'}</td>
+                                <td>
+                                    ${hasBatch && e.meetingLink ? `<a href="${e.meetingLink}" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-camera-video me-1"></i>Join Class</a>` : '-'}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                    
+                    const batchesWithIds = data.enrollments.filter(e => e.batchId !== null).map(e => ({
+                        id: e.batchId,
+                        batchName: e.batchName
+                    }));
+                    loadUpcomingMeetings(batchesWithIds);
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">You are not enrolled in any courses.</td></tr>';
+                    loadUpcomingMeetings([]);
+                }
+
+                // Check if student has at least one assigned batch
+                const hasAnyBatch = data.enrollments && data.enrollments.some(e => e.batchId !== null);
+                const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
+                sidebarLinks.forEach(link => {
+                    const text = link.textContent.trim().toLowerCase();
+                    if (text.includes('attendance') || text.includes('assignments') || text.includes('exams') || text.includes('projects')) {
+                        if (!hasAnyBatch) {
+                            link.parentElement.style.display = 'none';
+                        } else {
+                            link.parentElement.style.display = '';
+                        }
+                    }
+                });
+
+                // Display active enrollment alert if they are enrolled but have no batch
+                const alertContainer = document.getElementById('enrollmentAlertContainer');
+                if (alertContainer) {
+                    const enrolledNoBatch = data.enrollments && data.enrollments.some(e => e.batchId === null && (e.status === 'ACTIVE' || e.paymentStatus === 'PAID' || e.paymentStatus === 'PARTIALLY_PAID'));
+                    if (enrolledNoBatch) {
+                        alertContainer.innerHTML = `
+                            <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+                                <i class="bi bi-info-circle-fill me-2"></i>
+                                <strong>Your course enrollment is active.</strong> The administrator will assign you to a batch.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        `;
+                        alertContainer.style.display = '';
+                    } else {
+                        alertContainer.style.display = 'none';
+                    }
+                }
+            } else if (res.status === 401 || res.status === 403) {
+                window.location.href = '/login';
+            }
+        } catch (e) {
+            console.error('Error loading dashboard:', e);
+        }
+        loadCourses();
+    }
+
+    const viewMaterialsModal = new bootstrap.Modal(document.getElementById('viewMaterialsModal'));
+
+    async function viewCourseMaterials(courseId, courseName) {
+        document.getElementById('viewMaterialsModalLabel').innerText = `Learning Materials for "${courseName}"`;
+        const list = document.getElementById('viewMaterialsList');
+        list.innerHTML = '<li class="list-group-item text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div> Loading...</li>';
+        viewMaterialsModal.show();
+        
+        try {
+            const res = await fetch(`/api/student/courses/${courseId}/materials`);
+            if (res.ok) {
+                const materials = await res.json();
+                list.innerHTML = '';
+                if (materials.length === 0) {
+                    list.innerHTML = '<li class="list-group-item text-center text-muted py-3">No learning materials have been posted for this course.</li>';
+                    return;
+                }
+                materials.forEach(m => {
+                    list.innerHTML += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-dark">${m.title}</strong>
+                                <div class="text-muted small">${m.description||'Resource'}</div>
+                            </div>
+                            <a href="${m.url}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-box-arrow-up-right me-1"></i>Open</a>
+                        </li>
+                    `;
+                });
+            }
+        } catch(e) {
+            console.error(e);
+            list.innerHTML = '<li class="list-group-item text-center text-danger py-3">Error loading materials.</li>';
+        }
+    }
+
+    async function loadUpcomingMeetings(enrolledBatches) {
+        const list = document.getElementById('meetingsList');
+        list.innerHTML = '';
+        if (!enrolledBatches || enrolledBatches.length === 0) {
+            list.innerHTML = '<li class="list-group-item text-center text-muted py-3">No upcoming meetings scheduled.</li>';
+            return;
+        }
+
+        let meetingFound = false;
+        for (const b of enrolledBatches) {
+            try {
+                const res = await fetch(`/api/student/batches/${b.id}/meetings`);
+                if (res.ok) {
+                    const meetings = await res.json();
+                    meetings.forEach(m => {
+                        meetingFound = true;
+                        list.innerHTML += `
+                            <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                <div>
+                                    <h6 class="mb-1 fw-bold text-dark">${m.title}</h6>
+                                    <div class="text-muted small mb-1"><i class="bi bi-calendar3 me-1"></i>Date: ${m.meetingDate} | Time: ${m.meetingTime}</div>
+                                    <div class="text-muted small"><i class="bi bi-collection me-1"></i>Batch: ${b.batchName}</div>
+                                </div>
+                                <a href="${m.meetingLink}" target="_blank" class="btn btn-sm btn-success"><i class="bi bi-camera-video me-1"></i>Join</a>
+                            </li>
+                        `;
+                    });
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+        if (!meetingFound) {
+            list.innerHTML = '<li class="list-group-item text-center text-muted py-3">No upcoming meetings scheduled.</li>';
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.clear();
+            window.location.href = '/login';
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+</body>
+</html>

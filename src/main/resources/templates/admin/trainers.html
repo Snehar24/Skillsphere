@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Manage Trainers</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar {
+            min-height: 100vh;
+            background-color: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            background-size: cover;
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.8);
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div>
+            <hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Trainers</h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#trainerModal" onclick="prepareCreateModal()"><i class="bi bi-plus-lg me-2"></i>Add Trainer</button>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Employee ID</th>
+                                <th>Specialization</th>
+                                <th>Experience (Yrs)</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="trainersTableBody">
+                            <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="trainerModal" tabindex="-1" aria-labelledby="trainerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="trainerForm">
+                <input type="hidden" id="trainerId">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="trainerModalLabel">Add Trainer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="trainerModalAlert"></div>
+                    <div class="mb-3">
+                        <label for="trainerName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="trainerName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="trainerEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="trainerEmail" required>
+                    </div>
+                    <div class="mb-3" id="passwordFieldContainer">
+                        <label for="trainerPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="trainerPassword" placeholder="Required for new trainer">
+                    </div>
+                    <div class="mb-3">
+                        <label for="trainerPhone" class="form-label">Phone</label>
+                        <input type="text" class="form-control" id="trainerPhone">
+                    </div>
+                    <div class="mb-3">
+                        <label for="trainerEmpId" class="form-label">Employee ID</label>
+                        <input type="text" class="form-control" id="trainerEmpId" placeholder="Leave empty for auto generation">
+                    </div>
+                    <div class="mb-3">
+                        <label for="trainerSpec" class="form-label">Specialization</label>
+                        <input type="text" class="form-control" id="trainerSpec" placeholder="Java, Python, Web Dev">
+                    </div>
+                    <div class="mb-3">
+                        <label for="trainerExp" class="form-label">Experience (Years)</label>
+                        <input type="number" class="form-control" id="trainerExp" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label for="trainerQual" class="form-label">Qualification</label>
+                        <input type="text" class="form-control" id="trainerQual">
+                    </div>
+                    <div class="mb-3">
+                        <label for="trainerStatus" class="form-label">Status</label>
+                        <select class="form-select" id="trainerStatus">
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="trainerActive" checked>
+                        <label class="form-check-label" for="trainerActive">User Account Active</label>
+                    </div>
+                </div>
+                <div class="modal-header d-flex justify-content-end gap-2 border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const trainerModal = new bootstrap.Modal(document.getElementById('trainerModal'));
+
+    async function loadTrainers() {
+        try {
+            const res = await fetch('/api/admin/trainers?page=0&size=50');
+            if (res.ok) {
+                const data = await res.json();
+                const tbody = document.getElementById('trainersTableBody');
+                tbody.innerHTML = '';
+                data.content.forEach(t => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${t.name}</td>
+                            <td>${t.email}</td>
+                            <td>${t.employeeId || 'N/A'}</td>
+                            <td>${t.specialization || 'N/A'}</td>
+                            <td>${t.experience != null ? t.experience : 'N/A'}</td>
+                            <td><span class="badge bg-${t.active ? 'success' : 'danger'}">${t.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info me-1" onclick="editTrainer(${t.id})"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteTrainer(${t.id})"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function prepareCreateModal() {
+        document.getElementById('trainerId').value = '';
+        document.getElementById('trainerForm').reset();
+        document.getElementById('trainerModalAlert').innerHTML = '';
+        document.getElementById('trainerModalLabel').innerText = 'Add Trainer';
+        document.getElementById('passwordFieldContainer').style.display = 'block';
+        document.getElementById('trainerPassword').required = true;
+    }
+
+    async function editTrainer(id) {
+        try {
+            const res = await fetch(`/api/admin/trainers/${id}`);
+            if (res.ok) {
+                const t = await res.json();
+                document.getElementById('trainerId').value = t.id;
+                document.getElementById('trainerName').value = t.name;
+                document.getElementById('trainerEmail').value = t.email;
+                document.getElementById('trainerPhone').value = t.phone || '';
+                document.getElementById('trainerEmpId').value = t.employeeId || '';
+                document.getElementById('trainerSpec').value = t.specialization || '';
+                document.getElementById('trainerExp').value = t.experience || 0;
+                document.getElementById('trainerQual').value = t.qualification || '';
+                document.getElementById('trainerStatus').value = t.status;
+                document.getElementById('trainerActive').checked = t.active;
+                document.getElementById('trainerModalAlert').innerHTML = '';
+                document.getElementById('passwordFieldContainer').style.display = 'none';
+                document.getElementById('trainerPassword').required = false;
+
+                document.getElementById('trainerModalLabel').innerText = 'Edit Trainer';
+                trainerModal.show();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function deleteTrainer(id) {
+        if (confirm('Are you sure you want to delete this trainer?')) {
+            try {
+                const res = await fetch(`/api/admin/trainers/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadTrainers();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    document.getElementById('trainerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const alertDiv = document.getElementById('trainerModalAlert');
+        alertDiv.innerHTML = '';
+
+        const id = document.getElementById('trainerId').value;
+        const name = document.getElementById('trainerName').value;
+        const email = document.getElementById('trainerEmail').value;
+        const password = document.getElementById('trainerPassword').value;
+        const phone = document.getElementById('trainerPhone').value;
+        const employeeId = document.getElementById('trainerEmpId').value;
+        const specialization = document.getElementById('trainerSpec').value;
+        const experience = document.getElementById('trainerExp').value;
+        const qualification = document.getElementById('trainerQual').value;
+        const status = document.getElementById('trainerStatus').value;
+        const active = document.getElementById('trainerActive').checked;
+
+        const payload = { name, email, phone, employeeId, specialization, experience, qualification, status, active };
+        if (password) payload.password = password;
+
+        try {
+            let res;
+            if (id) {
+                res = await fetch(`/api/admin/trainers/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                res = await fetch('/api/admin/trainers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (res.ok) {
+                trainerModal.hide();
+                loadTrainers();
+            } else {
+                const err = await res.json();
+                alertDiv.innerHTML = `<div class="alert alert-danger" role="alert">${err.message || 'Failed to save trainer.'}</div>`;
+            }
+        } catch (error) {
+            console.error(error);
+            alertDiv.innerHTML = `<div class="alert alert-danger" role="alert">An error occurred while saving.</div>`;
+        }
+    });
+
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.clear();
+            window.location.href = '/login';
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadTrainers);
+</script>
+</body>
+</html>

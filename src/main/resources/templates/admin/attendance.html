@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Admin Attendance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar { min-height: 100vh; background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%); color: white; }
+        .sidebar .nav-link { color: rgba(255,255,255,.8); font-weight: 500; padding: 12px 20px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div><hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/admin/attendance"><i class="bi bi-calendar-check me-2"></i>Attendance</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/certificates"><i class="bi bi-award me-2"></i>Certificates</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/announcements"><i class="bi bi-megaphone me-2"></i>Broadcasts</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/audit-logs"><i class="bi bi-shield-lock-fill me-2"></i>Audit Logs</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a></li>
+                <li class="nav-item mt-4"><a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+            </ul>
+        </div>
+
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <div>
+                    <h1 class="h2 mb-0">Attendance Monitoring</h1>
+                    <small class="text-muted">Inspect live daily attendance records and session metrics across all active batches</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <select class="form-select w-auto" id="batchSelect" onchange="loadAttendance()">
+                        <option value="">-- Choose Batch --</option>
+                    </select>
+                    <input type="date" class="form-control w-auto" id="filterDate" onchange="filterRecords()">
+                </div>
+            </div>
+
+            <div id="loading" class="text-center py-5" style="display:none;">
+                <div class="spinner-border text-primary"></div>
+                <p class="mt-2">Loading attendance records...</p>
+            </div>
+
+            <div id="content" style="display:none;">
+                <div class="row mb-4" id="statsRow" style="display:none;">
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 border-start border-primary border-4">
+                            <div class="card-body py-2">
+                                <small class="text-muted fw-bold">TOTAL RECORDS</small>
+                                <h4 class="mb-0 fw-bold text-primary" id="statTotal">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 border-start border-success border-4">
+                            <div class="card-body py-2">
+                                <small class="text-muted fw-bold">PRESENT</small>
+                                <h4 class="mb-0 fw-bold text-success" id="statPresent">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 border-start border-warning border-4">
+                            <div class="card-body py-2">
+                                <small class="text-muted fw-bold">LATE</small>
+                                <h4 class="mb-0 fw-bold text-warning" id="statLate">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-sm border-0 border-start border-danger border-4">
+                            <div class="card-body py-2">
+                                <small class="text-muted fw-bold">ABSENT</small>
+                                <h4 class="mb-0 fw-bold text-danger" id="statAbsent">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 fw-bold text-primary">Attendance Records</h6>
+                        <input type="text" class="form-control form-control-sm w-25" id="searchBox" placeholder="Search student name..." onkeyup="filterRecords()">
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Registration No</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendanceTable"></tbody>
+                            </table>
+                        </div>
+                        <div id="emptyState" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-check fs-1 text-secondary"></i>
+                            <p class="mt-2">Please select a batch above to view attendance records.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function logout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).then(()=>{window.location.href='/login'}).catch(()=>{window.location.href='/login'})}
+let allRecords = [];
+
+function statusBadge(s){
+    const m={PRESENT:'bg-success text-white',ABSENT:'bg-danger text-white',LATE:'bg-warning text-dark'};
+    return `<span class="badge ${m[s]||'bg-secondary'} px-2 py-1">${s}</span>`;
+}
+
+async function init(){
+    try {
+        const res = await fetch('/api/admin/batches', {credentials:'include'});
+        if (res.status === 401 || res.status === 403) { window.location.href = '/login'; return; }
+        const batches = await res.json();
+        const sel = document.getElementById('batchSelect');
+        sel.innerHTML = '<option value="">-- Choose Batch --</option>';
+        batches.forEach(b => {
+            const bName = b.batchName || b.name || ('Batch #' + b.id);
+            sel.innerHTML += `<option value="${b.id}">${bName}</option>`;
+        });
+        document.getElementById('content').style.display = '';
+    } catch(e) { console.error(e); }
+}
+
+async function loadAttendance(){
+    const batchId = document.getElementById('batchSelect').value;
+    if (!batchId) {
+        allRecords = [];
+        document.getElementById('attendanceTable').innerHTML = '';
+        document.getElementById('emptyState').style.display = '';
+        document.getElementById('statsRow').style.display = 'none';
+        return;
+    }
+    document.getElementById('loading').style.display = '';
+    document.getElementById('emptyState').style.display = 'none';
+    try {
+        const res = await fetch(`/api/admin/batches/${batchId}/attendance`, {credentials:'include'});
+        allRecords = await res.json();
+        renderTable(allRecords);
+    } catch(e) { 
+        console.error(e); 
+        document.getElementById('emptyState').style.display = '';
+    }
+    document.getElementById('loading').style.display = 'none';
+}
+
+function filterRecords(){
+    const q = document.getElementById('searchBox').value.toLowerCase().trim();
+    const date = document.getElementById('filterDate').value;
+    let filtered = allRecords.filter(a => {
+        const matchesName = !q || (a.studentName && a.studentName.toLowerCase().includes(q)) || (a.registrationNumber && a.registrationNumber.toLowerCase().includes(q));
+        const matchesDate = !date || a.date === date;
+        return matchesName && matchesDate;
+    });
+    renderTable(filtered);
+}
+
+function renderTable(data){
+    const tbody = document.getElementById('attendanceTable');
+    tbody.innerHTML = '';
+    if (!data || data.length === 0) {
+        document.getElementById('emptyState').style.display = '';
+        document.getElementById('emptyState').innerHTML = '<i class="bi bi-calendar-x fs-1 text-muted"></i><p class="mt-2">No attendance records found for the selected criteria.</p>';
+        document.getElementById('statsRow').style.display = 'none';
+        return;
+    }
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('statsRow').style.display = 'flex';
+
+    let present = 0, late = 0, absent = 0;
+    data.forEach(a => {
+        if (a.status === 'PRESENT') present++;
+        else if (a.status === 'LATE') late++;
+        else if (a.status === 'ABSENT') absent++;
+
+        tbody.innerHTML += `
+        <tr>
+            <td><strong>${a.studentName||'-'}</strong></td>
+            <td><code>${a.registrationNumber||'-'}</code></td>
+            <td>${a.date||'-'}</td>
+            <td>${statusBadge(a.status)}</td>
+            <td>${a.remarks||'-'}</td>
+        </tr>`;
+    });
+
+    document.getElementById('statTotal').innerText = data.length;
+    document.getElementById('statPresent').innerText = present;
+    document.getElementById('statLate').innerText = late;
+    document.getElementById('statAbsent').innerText = absent;
+}
+
+init();
+</script>
+</body>
+</html>

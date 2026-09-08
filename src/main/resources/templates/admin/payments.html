@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Manage Payments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar {
+            min-height: 100vh;
+            background-color: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            background-size: cover;
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.8);
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div>
+            <hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Payments</h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#paymentModal" onclick="preparePaymentModal()"><i class="bi bi-plus-lg me-2"></i>Record Payment</button>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Amount (₹)</th>
+                                <th>Date</th>
+                                <th>Method</th>
+                                <th>Transaction ID</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody id="paymentsTableBody">
+                            <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="paymentForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel">Record Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="payStudent" class="form-label">Student</label>
+                        <select class="form-select" id="payStudent" required>
+                            <!-- Dynamic options -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payCourse" class="form-label">Course</label>
+                        <select class="form-select" id="payCourse" required>
+                            <!-- Dynamic options -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payAmount" class="form-label">Amount (₹)</label>
+                        <input type="number" class="form-control" id="payAmount" required min="0" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label for="payMethod" class="form-label">Payment Method</label>
+                        <select class="form-select" id="payMethod">
+                            <option value="CASH">CASH</option>
+                            <option value="CARD">CARD</option>
+                            <option value="UPI">UPI</option>
+                            <option value="BANK_TRANSFER">BANK TRANSFER</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="payTxnId" class="form-label">Transaction ID</label>
+                        <input type="text" class="form-control" id="payTxnId" placeholder="Leave empty for auto generation">
+                    </div>
+                </div>
+                <div class="modal-header d-flex justify-content-end gap-2 border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+
+    async function loadSelects() {
+        try {
+            const studentRes = await fetch('/api/admin/students?page=0&size=200');
+            const courseRes = await fetch('/api/admin/courses?page=0&size=100');
+            
+            if (studentRes.ok && courseRes.ok) {
+                const students = await studentRes.json();
+                const courses = await courseRes.json();
+
+                const studentSelect = document.getElementById('payStudent');
+                studentSelect.innerHTML = '<option value="">Select Student</option>';
+                students.content.forEach(s => {
+                    studentSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+
+                const courseSelect = document.getElementById('payCourse');
+                courseSelect.innerHTML = '<option value="">Select Course</option>';
+                courses.content.forEach(c => {
+                    courseSelect.innerHTML += `<option value="${c.id}">${c.name} (₹${c.fee.toFixed(2)})</option>`;
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function loadPayments() {
+        try {
+            const res = await fetch('/api/admin/payments');
+            if (res.ok) {
+                const data = await res.json();
+                const tbody = document.getElementById('paymentsTableBody');
+                tbody.innerHTML = '';
+                data.forEach(p => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${p.studentName}</td>
+                            <td>${p.courseName}</td>
+                            <td>₹${p.amount.toFixed(2)}</td>
+                            <td>${p.paymentDate}</td>
+                            <td>${p.paymentMethod}</td>
+                            <td>${p.transactionId}</td>
+                            <td><span class="badge bg-success">${p.status}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function preparePaymentModal() {
+        document.getElementById('paymentForm').reset();
+        await loadSelects();
+    }
+
+    document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const studentId = document.getElementById('payStudent').value;
+        const courseId = document.getElementById('payCourse').value;
+        const amount = document.getElementById('payAmount').value;
+        const paymentMethod = document.getElementById('payMethod').value;
+        const transactionId = document.getElementById('payTxnId').value;
+
+        const payload = { studentId, courseId, amount, paymentMethod, transactionId };
+
+        try {
+            const res = await fetch('/api/admin/payments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                paymentModal.hide();
+                loadPayments();
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    });
+
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.clear();
+            window.location.href = '/login';
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPayments();
+    });
+</script>
+</body>
+</html>

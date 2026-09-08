@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Manage Enrollments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar {
+            min-height: 100vh;
+            background-color: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            background-size: cover;
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.8);
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div>
+            <hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Course Enrolled Students</h1>
+                <div class="d-flex align-items-center gap-2">
+                    <select class="form-select" id="filterCourse" style="width: 250px;" onchange="onCourseFilterChanged()">
+                        <option value="">Select Course</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Bulk Action Toolbar -->
+            <div class="card shadow-sm mb-3 bg-light" id="bulkToolbar" style="display: none;">
+                <div class="card-body py-2 d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="fw-bold text-primary" id="selectedCount">0</span> student(s) selected
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <select class="form-select form-select-sm" id="bulkBatchSelect" style="width: 220px;">
+                            <option value="">Select Target Batch</option>
+                        </select>
+                        <button class="btn btn-sm btn-success" onclick="assignSelectedToBatch()">Assign to Batch</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                            <tr>
+                                <th width="40"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)"></th>
+                                <th>Student Name</th>
+                                <th>Reg Number</th>
+                                <th>Course</th>
+                                <th>Enrollment Date</th>
+                                <th>Payment Status</th>
+                                <th>Enrollment Status</th>
+                                <th>Current Batch</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="enrollmentsTableBody">
+                            <tr>
+                                <td colspan="9" class="text-center text-muted">Please select a course to load enrolled students.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    let allCourses = [];
+    let allBatches = [];
+    let currentEnrollments = [];
+
+    async function init() {
+        await loadCourses();
+        await loadBatches();
+        await loadEnrollments(); // Load all on initial
+    }
+
+    async function loadCourses() {
+        try {
+            const res = await fetch('/api/admin/courses');
+            if (res.ok) {
+                const data = await res.json();
+                allCourses = data.content || data;
+                const filter = document.getElementById('filterCourse');
+                filter.innerHTML = '<option value="">-- All Enrolled Students --</option>';
+                allCourses.forEach(c => {
+                    filter.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                });
+            }
+        } catch (e) {
+            console.error('Error loading courses:', e);
+        }
+    }
+
+    async function loadBatches() {
+        try {
+            const res = await fetch('/api/admin/batches');
+            if (res.ok) {
+                allBatches = await res.json();
+            }
+        } catch (e) {
+            console.error('Error loading batches:', e);
+        }
+    }
+
+    async function onCourseFilterChanged() {
+        const courseId = document.getElementById('filterCourse').value;
+        const bulkToolbar = document.getElementById('bulkToolbar');
+        const bulkBatch = document.getElementById('bulkBatchSelect');
+        
+        // Reset selections
+        document.getElementById('selectAllCheckbox').checked = false;
+        
+        if (courseId) {
+            // Populate target batch dropdown
+            bulkBatch.innerHTML = '<option value="">Select Target Batch</option>';
+            const courseBatches = allBatches.filter(b => b.courseId == courseId);
+            courseBatches.forEach(b => {
+                bulkBatch.innerHTML += `<option value="${b.id}">${b.batchName} (${b.trainerName || 'No Trainer'})</option>`;
+            });
+            bulkToolbar.style.display = '';
+        } else {
+            bulkToolbar.style.display = 'none';
+        }
+
+        await loadEnrollments(courseId);
+    }
+
+    async function loadEnrollments(courseId = '') {
+        try {
+            let url = '/api/admin/enrollments';
+            if (courseId) {
+                url += `?courseId=${courseId}`;
+            }
+            const res = await fetch(url);
+            if (res.ok) {
+                currentEnrollments = await res.json();
+                const tbody = document.getElementById('enrollmentsTableBody');
+                tbody.innerHTML = '';
+                
+                if (currentEnrollments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No students enrolled.</td></tr>';
+                    return;
+                }
+
+                currentEnrollments.forEach(e => {
+                    const hasBatch = e.batchId !== null && e.batchName !== 'Not Assigned';
+                    const paymentBadge = e.paymentStatus === 'PAID' ? 'success' : (e.paymentStatus === 'PARTIALLY_PAID' ? 'warning' : 'danger');
+                    const enrollBadge = e.status === 'ACTIVE' ? 'success' : 'secondary';
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><input type="checkbox" class="student-select" value="${e.studentId}" onclick="updateSelectedCount()"></td>
+                            <td><strong>${e.studentName}</strong></td>
+                            <td>${e.registrationNumber || 'N/A'}</td>
+                            <td>${e.courseName}</td>
+                            <td>${e.enrollmentDate || '-'}</td>
+                            <td><span class="badge bg-${paymentBadge}">${e.paymentStatus}</span></td>
+                            <td><span class="badge bg-${enrollBadge}">${e.status}</span></td>
+                            <td><span class="fw-bold ${hasBatch ? 'text-success' : 'text-danger'}">${e.batchName}</span></td>
+                            <td>
+                                ${hasBatch ? `<button class="btn btn-sm btn-outline-danger" onclick="removeStudentFromBatch(${e.batchId}, ${e.studentId})" title="Remove from Batch"><i class="bi bi-person-dash-fill"></i> Remove</button>` : '<span class="text-muted small">Not in batch</span>'}
+                            </td>
+                        </tr>
+                    `;
+                });
+                updateSelectedCount();
+            }
+        } catch (e) {
+            console.error('Error loading enrollments:', e);
+        }
+    }
+
+    function toggleSelectAll(selectAll) {
+        const checkboxes = document.querySelectorAll('.student-select');
+        checkboxes.forEach(c => {
+            c.checked = selectAll.checked;
+        });
+        updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.student-select:checked');
+        document.getElementById('selectedCount').innerText = selected.length;
+    }
+
+    async function assignSelectedToBatch() {
+        const batchId = document.getElementById('bulkBatchSelect').value;
+        if (!batchId) {
+            alert('Please select a target batch.');
+            return;
+        }
+
+        const selected = document.querySelectorAll('.student-select:checked');
+        if (selected.length === 0) {
+            alert('Please select at least one student.');
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to assign ${selected.length} student(s) to the selected batch?`)) {
+            return;
+        }
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (const chk of selected) {
+            const studentId = chk.value;
+            try {
+                const res = await fetch(`/api/admin/batches/${batchId}/students/${studentId}`, {
+                    method: 'POST'
+                });
+                if (res.ok) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch (e) {
+                console.error(e);
+                failCount++;
+            }
+        }
+
+        alert(`Batch assignment completed: ${successCount} success, ${failCount} failed.`);
+        
+        // Refresh table
+        const courseId = document.getElementById('filterCourse').value;
+        await loadEnrollments(courseId);
+    }
+
+    async function removeStudentFromBatch(batchId, studentId) {
+        if (!confirm('Are you sure you want to remove this student from the batch?')) {
+            return;
+        }
+        try {
+            const res = await fetch(`/api/admin/batches/${batchId}/students/${studentId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                alert('Student removed from batch successfully.');
+                const courseId = document.getElementById('filterCourse').value;
+                await loadEnrollments(courseId);
+            } else {
+                alert('Failed to remove student.');
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error removing student.');
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.clear();
+            window.location.href = '/login';
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

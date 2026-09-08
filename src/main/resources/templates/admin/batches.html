@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Manage Batches</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar {
+            min-height: 100vh;
+            background-color: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            background-size: cover;
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.8);
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div>
+            <hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Batches</h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#batchModal" onclick="prepareCreateModal()"><i class="bi bi-plus-lg me-2"></i>Create Batch</button>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                            <tr>
+                                <th>Batch Name</th>
+                                <th>Course</th>
+                                <th>Trainer</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Enrolled / Capacity</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="batchesTableBody">
+                            <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="batchModal" tabindex="-1" aria-labelledby="batchModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="batchForm">
+                <input type="hidden" id="batchId">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="batchModalLabel">Create Batch</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="batchName" class="form-label">Batch Name</label>
+                        <input type="text" class="form-control" id="batchName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="batchCourse" class="form-label">Course</label>
+                        <select class="form-select" id="batchCourse" required>
+                            <!-- Loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="batchTrainer" class="form-label">Trainer</label>
+                        <select class="form-select" id="batchTrainer">
+                            <option value="">Select Trainer</option>
+                            <!-- Loaded dynamically -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="batchStart" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="batchStart">
+                    </div>
+                    <div class="mb-3">
+                        <label for="batchEnd" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="batchEnd">
+                    </div>
+                    <div class="mb-3">
+                        <label for="batchCapacity" class="form-label">Max Students</label>
+                        <input type="number" class="form-control" id="batchCapacity" required min="1" value="30">
+                    </div>
+                    <div class="mb-3">
+                        <label for="batchStatus" class="form-label">Status</label>
+                        <select class="form-select" id="batchStatus">
+                            <option value="UPCOMING">UPCOMING</option>
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="COMPLETED">COMPLETED</option>
+                            <option value="CANCELLED">CANCELLED</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="batchMeetingTitle" class="form-label">Meeting Title</label>
+                        <input type="text" class="form-control" id="batchMeetingTitle">
+                    </div>
+                    <div class="mb-3">
+                        <label for="batchMeetingLink" class="form-label">Meeting Link</label>
+                        <input type="text" class="form-control" id="batchMeetingLink">
+                    </div>
+                </div>
+                <div class="modal-header d-flex justify-content-end gap-2 border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const batchModal = new bootstrap.Modal(document.getElementById('batchModal'));
+
+    async function loadFormSelects() {
+        try {
+            const courseRes = await fetch('/api/admin/courses?page=0&size=100');
+            const trainerRes = await fetch('/api/admin/trainers?page=0&size=100');
+            
+            if (courseRes.ok && trainerRes.ok) {
+                const courses = await courseRes.json();
+                const trainers = await trainerRes.json();
+
+                const courseSelect = document.getElementById('batchCourse');
+                courseSelect.innerHTML = '';
+                courses.content.forEach(c => {
+                    courseSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+                });
+
+                const trainerSelect = document.getElementById('batchTrainer');
+                trainerSelect.innerHTML = '<option value="">Select Trainer</option>';
+                trainers.content.forEach(t => {
+                    trainerSelect.innerHTML += `<option value="${t.id}">${t.name} (${t.specialization || 'General'})</option>`;
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function loadBatches() {
+        try {
+            const res = await fetch('/api/admin/batches');
+            if (res.ok) {
+                const data = await res.json();
+                const tbody = document.getElementById('batchesTableBody');
+                tbody.innerHTML = '';
+                data.forEach(b => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${b.batchName}</td>
+                            <td>${b.courseName}</td>
+                            <td>${b.trainerName}</td>
+                            <td>${b.startDate || 'N/A'}</td>
+                            <td>${b.endDate || 'N/A'}</td>
+                            <td>${b.activeStudentsCount} / ${b.maxStudents}</td>
+                            <td><span class="badge bg-${getStatusClass(b.status)}">${b.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-info me-1" onclick="editBatch(${b.id})"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteBatch(${b.id})"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function getStatusClass(status) {
+        return status === 'ACTIVE' ? 'success' : (status === 'UPCOMING' ? 'info' : (status === 'COMPLETED' ? 'secondary' : 'danger'));
+    }
+
+    async function prepareCreateModal() {
+        document.getElementById('batchId').value = '';
+        document.getElementById('batchForm').reset();
+        document.getElementById('batchModalLabel').innerText = 'Create Batch';
+        await loadFormSelects();
+    }
+
+    async function editBatch(id) {
+        try {
+            await loadFormSelects();
+            const res = await fetch(`/api/admin/batches/${id}`);
+            if (res.ok) {
+                const b = await res.json();
+                document.getElementById('batchId').value = b.id;
+                document.getElementById('batchName').value = b.batchName;
+                document.getElementById('batchCourse').value = b.courseId;
+                document.getElementById('batchTrainer').value = b.trainerId || '';
+                document.getElementById('batchStart').value = b.startDate || '';
+                document.getElementById('batchEnd').value = b.endDate || '';
+                document.getElementById('batchCapacity').value = b.maxStudents;
+                document.getElementById('batchStatus').value = b.status;
+                document.getElementById('batchMeetingTitle').value = b.meetingTitle || '';
+                document.getElementById('batchMeetingLink').value = b.meetingLink || '';
+
+                document.getElementById('batchModalLabel').innerText = 'Edit Batch';
+                batchModal.show();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function deleteBatch(id) {
+        if (confirm('Are you sure you want to delete this batch?')) {
+            try {
+                const res = await fetch(`/api/admin/batches/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadBatches();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    document.getElementById('batchForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const id = document.getElementById('batchId').value;
+        const batchName = document.getElementById('batchName').value;
+        const courseId = document.getElementById('batchCourse').value;
+        const trainerId = document.getElementById('batchTrainer').value || null;
+        const startDate = document.getElementById('batchStart').value || null;
+        const endDate = document.getElementById('batchEnd').value || null;
+        const maxStudents = document.getElementById('batchCapacity').value;
+        const status = document.getElementById('batchStatus').value;
+        const meetingTitle = document.getElementById('batchMeetingTitle').value || null;
+        const meetingLink = document.getElementById('batchMeetingLink').value || null;
+
+        const payload = { batchName, courseId, trainerId, startDate, endDate, maxStudents, status, meetingTitle, meetingLink };
+
+        try {
+            let res;
+            if (id) {
+                res = await fetch(`/api/admin/batches/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                res = await fetch('/api/admin/batches', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (res.ok) {
+                batchModal.hide();
+                loadBatches();
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    });
+
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.clear();
+            window.location.href = '/login';
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadBatches();
+    });
+</script>
+</body>
+</html>

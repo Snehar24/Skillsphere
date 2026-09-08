@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fc;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background-color: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            background-size: cover;
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.8);
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
+        }
+        .card-counter {
+            border-left: 4px solid;
+        }
+        .card-primary { border-left-color: #4e73df; }
+        .card-success { border-left-color: #1cc88a; }
+        .card-info { border-left-color: #36b9cc; }
+        .card-warning { border-left-color: #f6c23e; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div>
+            <hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/attendance"><i class="bi bi-calendar-check me-2"></i>Attendance</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/certificates"><i class="bi bi-award me-2"></i>Certificates</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/announcements"><i class="bi bi-megaphone me-2"></i>Broadcasts</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/audit-logs"><i class="bi bi-shield-lock-fill me-2"></i>Audit Logs</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Dashboard Summary</h1>
+                <div class="btn-toolbar mb-2 mb-md-0 d-flex align-items-center gap-3">
+                    <!-- Notification Bell Dropdown -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary position-relative" type="button" id="notifDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" onclick="fetchNotificationsList()">
+                            <i class="bi bi-bell-fill"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" id="notifCountBadge">
+                                0
+                            </span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow p-2" aria-labelledby="notifDropdownBtn" style="width: 320px; max-height: 400px; overflow-y: auto;" id="notifDropdownList">
+                            <li class="text-center py-2 text-muted small">Loading notifications...</li>
+                        </ul>
+                    </div>
+                    <span class="badge bg-primary px-3 py-2 fs-6" id="adminName">Loading...</span>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card card-counter card-primary shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Students</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalStudents">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-people fs-2 text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card card-counter card-success shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Trainers</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalTrainers">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-person-badge fs-2 text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card card-counter card-info shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Active Batches</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="activeBatches">0</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-collection fs-2 text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card card-counter card-warning shadow h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Revenue</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRevenue">₹0.00</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-currency-rupee fs-2 text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Lists -->
+            <div class="row">
+                <!-- Recent Students -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-person-plus me-2"></i>Recent Student Registrations</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Reg No</th>
+                                        <th>Email</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="recentStudentsTable">
+                                    <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Payments -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header bg-white py-3">
+                            <h6 class="m-0 font-weight-bold text-success"><i class="bi bi-credit-card me-2"></i>Recent Payments</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    <thead>
+                                    <tr>
+                                        <th>Student</th>
+                                        <th>Amount</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="recentPaymentsTable">
+                                    <!-- Dynamic content -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    async function loadDashboardData() {
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                window.location.href = '/login';
+                return;
+            }
+            document.getElementById('adminName').innerText = user.name;
+
+            const response = await fetch('/api/admin/dashboard');
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('totalStudents').innerText = data.totalStudents;
+                document.getElementById('totalTrainers').innerText = data.totalTrainers;
+                document.getElementById('activeBatches').innerText = data.activeBatches;
+                document.getElementById('totalRevenue').innerText = '₹' + data.totalRevenue.toFixed(2);
+
+                const studentTbody = document.getElementById('recentStudentsTable');
+                studentTbody.innerHTML = data.recentStudents.length ? '' : '<tr><td colspan="3" class="text-center">No students found</td></tr>';
+                data.recentStudents.forEach(s => {
+                    studentTbody.innerHTML += `
+                        <tr>
+                            <td>${s.name}</td>
+                            <td>${s.registrationNumber || 'N/A'}</td>
+                            <td>${s.email}</td>
+                        </tr>
+                    `;
+                });
+
+                const paymentTbody = document.getElementById('recentPaymentsTable');
+                paymentTbody.innerHTML = data.recentPayments.length ? '' : '<tr><td colspan="4" class="text-center">No payments found</td></tr>';
+                data.recentPayments.forEach(p => {
+                    paymentTbody.innerHTML += `
+                        <tr>
+                            <td>${p.studentName}</td>
+                            <td>₹${p.amount.toFixed(2)}</td>
+                            <td>${p.paymentDate}</td>
+                            <td><span class="badge bg-${p.status === 'PAID' ? 'success' : 'warning'}">${p.status}</span></td>
+                        </tr>
+                    `;
+                });
+            } else {
+                window.location.href = '/login';
+            }
+
+            // Check unread count
+            try {
+                const ncRes = await fetch('/api/notifications/unread-count');
+                if (ncRes.ok) {
+                    const ncData = await ncRes.json();
+                    const badge = document.getElementById('notifCountBadge');
+                    if (ncData.unreadCount > 0) {
+                        badge.innerText = ncData.unreadCount;
+                        badge.classList.remove('d-none');
+                    } else {
+                        badge.classList.add('d-none');
+                    }
+                }
+            } catch(e) { console.error(e); }
+        } catch (error) {
+            console.error('Error loading dashboard data', error);
+        }
+    }
+
+    async function fetchNotificationsList() {
+        try {
+            const res = await fetch('/api/notifications');
+            if (res.ok) {
+                const notifications = await res.json();
+                const list = document.getElementById('notifDropdownList');
+                list.innerHTML = '';
+                
+                const unreadCount = notifications.filter(n => !n.read).length;
+                const badge = document.getElementById('notifCountBadge');
+                if (unreadCount > 0) {
+                    badge.innerText = unreadCount;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+                
+                if (notifications.length === 0) {
+                    list.innerHTML = '<li class="text-center py-2 text-muted small">No notifications</li>';
+                    return;
+                }
+                
+                if (unreadCount > 0) {
+                    list.innerHTML += `
+                        <li class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                            <span class="small fw-bold">Notifications</span>
+                            <button class="btn btn-link btn-sm text-decoration-none p-0 small" onclick="markAllAsRead(event)">Mark all as read</button>
+                        </li>
+                    `;
+                } else {
+                    list.innerHTML += `<li class="border-bottom pb-2 mb-2"><span class="small fw-bold">Notifications</span></li>`;
+                }
+                
+                notifications.forEach(n => {
+                    const readClass = n.read ? 'text-muted' : 'fw-bold text-dark';
+                    const bgClass = n.read ? '' : 'bg-light';
+                    list.innerHTML += `
+                        <li class="p-2 border-bottom ${bgClass} rounded mb-1 position-relative" style="font-size:0.85rem;">
+                            <div class="${readClass}">${n.title}</div>
+                            <div class="text-muted small my-1" style="font-size:0.75rem; white-space: normal; word-wrap: break-word;">${n.message}</div>
+                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                <span class="text-muted small" style="font-size:0.7rem;">${new Date(n.createdAt).toLocaleDateString()}</span>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm text-primary p-0 me-2" onclick="toggleReadStatus(event, ${n.id}, ${n.read})" title="${n.read ? 'Mark as Unread' : 'Mark as Read'}">
+                                        <i class="bi ${n.read ? 'bi-envelope' : 'bi-envelope-open'}"></i>
+                                    </button>
+                                    <button class="btn btn-sm text-danger p-0" onclick="removeNotification(event, ${n.id})" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    `;
+                });
+            }
+        } catch (e) {
+            console.error('Error fetching notifications:', e);
+        }
+    }
+
+    async function toggleReadStatus(event, id, currentRead) {
+        if (event) event.stopPropagation();
+        try {
+            const url = currentRead ? `/api/notifications/${id}/unread` : `/api/notifications/${id}/read`;
+            const res = await fetch(url, { method: 'POST' });
+            if (res.ok) {
+                fetchNotificationsList();
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    async function removeNotification(event, id) {
+        if (event) event.stopPropagation();
+        if (!confirm('Are you sure you want to delete this notification?')) return;
+        try {
+            const res = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                fetchNotificationsList();
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    async function markAllAsRead(event) {
+        if (event) event.stopPropagation();
+        try {
+            const res = await fetch('/api/notifications/read-all', { method: 'POST' });
+            if (res.ok) {
+                fetchNotificationsList();
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.clear();
+            window.location.href = '/login';
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadDashboardData);
+</script>
+</body>
+</html>

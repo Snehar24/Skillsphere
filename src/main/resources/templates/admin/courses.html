@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Manage Courses</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar {
+            min-height: 100vh;
+            background-color: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            background-size: cover;
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.8);
+            font-weight: 500;
+            padding: 12px 20px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255,255,255,.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div>
+            <hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a>
+                </li>
+                <li class="nav-item mt-4">
+                    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Courses</h1>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#courseModal" onclick="prepareCreateModal()"><i class="bi bi-plus-lg me-2"></i>Create Course</button>
+            </div>
+
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered" width="100%" cellspacing="0">
+                            <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Duration</th>
+                                <th>Fee (₹)</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="coursesTableBody">
+                            <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="courseModal" tabindex="-1" aria-labelledby="courseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="courseForm">
+                <input type="hidden" id="courseId">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="courseModalLabel">Create Course</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="courseName" class="form-label">Course Name</label>
+                        <input type="text" class="form-control" id="courseName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="courseDuration" class="form-label">Duration</label>
+                        <input type="text" class="form-control" id="courseDuration" required placeholder="e.g. 3 Months, 40 Hours">
+                    </div>
+                    <div class="mb-3">
+                        <label for="courseFee" class="form-label">Course Fee (₹)</label>
+                        <input type="number" class="form-control" id="courseFee" required min="0" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label for="courseDesc" class="form-label">Description</label>
+                        <textarea class="form-control" id="courseDesc" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="courseStatus" class="form-label">Status</label>
+                        <select class="form-select" id="courseStatus">
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="INACTIVE">INACTIVE</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-header d-flex justify-content-end gap-2 border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Materials Modal -->
+<div class="modal fade" id="materialsModal" tabindex="-1" aria-labelledby="materialsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="materialsModalLabel">Course Materials</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="materialForm" class="row g-3 mb-4">
+                    <input type="hidden" id="materialCourseId">
+                    <div class="col-md-4">
+                        <label for="materialTitle" class="form-label small fw-bold">Material Title</label>
+                        <input type="text" class="form-control form-control-sm" id="materialTitle" required placeholder="e.g. Java Basics Slide">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="materialUrl" class="form-label small fw-bold">Material URL / Link</label>
+                        <input type="url" class="form-control form-control-sm" id="materialUrl" required placeholder="e.g. https://drive.google.com/...">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="materialType" class="form-label small fw-bold">Type</label>
+                        <select class="form-select form-select-sm" id="materialType">
+                            <option value="LINK">LINK</option>
+                            <option value="NOTES">NOTES</option>
+                            <option value="FILE">FILE</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-lg me-1"></i>Add</button>
+                    </div>
+                    <div class="col-12">
+                        <label for="materialDesc" class="form-label small fw-bold">Description (Optional)</label>
+                        <input type="text" class="form-control form-control-sm" id="materialDesc" placeholder="e.g. Slides from Class #1">
+                    </div>
+                </form>
+                
+                <h6 class="fw-bold mb-3 border-bottom pb-2">Existing Materials</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Description</th>
+                                <th>URL</th>
+                                <th>Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="materialsListBody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const courseModal = new bootstrap.Modal(document.getElementById('courseModal'));
+
+    async function loadCourses() {
+        try {
+            const res = await fetch('/api/admin/courses?page=0&size=50');
+            if (res.ok) {
+                const data = await res.json();
+                const tbody = document.getElementById('coursesTableBody');
+                tbody.innerHTML = '';
+                data.content.forEach(c => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${c.name}</td>
+                            <td>${c.duration || 'N/A'}</td>
+                            <td>₹${c.fee.toFixed(2)}</td>
+                            <td>${c.description || 'N/A'}</td>
+                            <td><span class="badge bg-${c.status === 'ACTIVE' ? 'success' : 'danger'}">${c.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-warning text-white me-1" onclick="openMaterialsModal(${c.id}, '${c.name.replace(/'/g, "\\'")}')" title="Materials"><i class="bi bi-file-earmark-arrow-up"></i></button>
+                                <button class="btn btn-sm btn-info me-1" onclick="editCourse(${c.id})"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteCourse(${c.id})"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function prepareCreateModal() {
+        document.getElementById('courseId').value = '';
+        document.getElementById('courseForm').reset();
+        document.getElementById('courseModalLabel').innerText = 'Create Course';
+    }
+
+    async function editCourse(id) {
+        try {
+            const res = await fetch(`/api/admin/courses/${id}`);
+            if (res.ok) {
+                const c = await res.json();
+                document.getElementById('courseId').value = c.id;
+                document.getElementById('courseName').value = c.name;
+                document.getElementById('courseDuration').value = c.duration || '';
+                document.getElementById('courseFee').value = c.fee;
+                document.getElementById('courseDesc').value = c.description || '';
+                document.getElementById('courseStatus').value = c.status;
+
+                document.getElementById('courseModalLabel').innerText = 'Edit Course';
+                courseModal.show();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function deleteCourse(id) {
+        if (confirm('Are you sure you want to delete this course?')) {
+            try {
+                const res = await fetch(`/api/admin/courses/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadCourses();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    document.getElementById('courseForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const id = document.getElementById('courseId').value;
+        const name = document.getElementById('courseName').value;
+        const duration = document.getElementById('courseDuration').value;
+        const fee = document.getElementById('courseFee').value;
+        const description = document.getElementById('courseDesc').value;
+        const status = document.getElementById('courseStatus').value;
+
+        const payload = { name, duration, fee, description, status };
+
+        try {
+            let res;
+            if (id) {
+                res = await fetch(`/api/admin/courses/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } else {
+                res = await fetch('/api/admin/courses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+
+            if (res.ok) {
+                courseModal.hide();
+                loadCourses();
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    });
+
+    const materialsModal = new bootstrap.Modal(document.getElementById('materialsModal'));
+
+    async function openMaterialsModal(courseId, courseName) {
+        document.getElementById('materialCourseId').value = courseId;
+        document.getElementById('materialsModalLabel').innerText = `Course Materials for "${courseName}"`;
+        document.getElementById('materialForm').reset();
+        await loadMaterials(courseId);
+        materialsModal.show();
+    }
+
+    async function loadMaterials(courseId) {
+        const tbody = document.getElementById('materialsListBody');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-2"><div class="spinner-border spinner-border-sm text-primary"></div> Loading...</td></tr>';
+        try {
+            const res = await fetch(`/api/admin/courses/${courseId}/materials`);
+            if (res.ok) {
+                const materials = await res.json();
+                tbody.innerHTML = '';
+                if (materials.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-2">No learning materials added yet.</td></tr>';
+                    return;
+                }
+                materials.forEach(m => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${m.title}</strong></td>
+                            <td class="text-muted small">${m.description||'-'}</td>
+                            <td><a href="${m.url}" target="_blank" class="text-decoration-none text-truncate d-inline-block" style="max-width:180px;">${m.url}</a></td>
+                            <td><span class="badge bg-secondary">${m.type}</span></td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-danger py-0 px-2" onclick="deleteMaterial(${m.id}, ${courseId})"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch(e) {
+            console.error(e);
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-2">Failed to load materials.</td></tr>';
+        }
+    }
+
+    document.getElementById('materialForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const courseId = document.getElementById('materialCourseId').value;
+        const title = document.getElementById('materialTitle').value;
+        const description = document.getElementById('materialDesc').value;
+        const url = document.getElementById('materialUrl').value;
+        const type = document.getElementById('materialType').value;
+        
+        try {
+            const res = await fetch(`/api/admin/courses/${courseId}/materials`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description, url, type })
+            });
+            if (res.ok) {
+                document.getElementById('materialForm').reset();
+                loadMaterials(courseId);
+            } else {
+                alert('Failed to add learning material');
+            }
+        } catch(error) {
+            console.error(error);
+        }
+    });
+
+    async function deleteMaterial(id, courseId) {
+        if (confirm('Are you sure you want to delete this course material?')) {
+            try {
+                const res = await fetch(`/api/admin/courses/materials/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    loadMaterials(courseId);
+                } else {
+                    alert('Failed to delete material');
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            localStorage.clear();
+            window.location.href = '/login';
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadCourses);
+</script>
+</body>
+</html>

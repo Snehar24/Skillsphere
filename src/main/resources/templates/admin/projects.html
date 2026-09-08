@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Admin Projects</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar { min-height: 100vh; background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%); color: white; }
+        .sidebar .nav-link { color: rgba(255,255,255,.8); font-weight: 500; padding: 12px 20px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div><hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a></li>
+                <li class="nav-item mt-4"><a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+            </ul>
+        </div>
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Projects Monitoring</h1>
+                <select class="form-select d-inline-block w-auto" id="batchSelect" onchange="loadProjects()"><option value="">-- Select Batch --</option></select>
+            </div>
+            <div id="loading" class="text-center py-5" style="display:none;"><div class="spinner-border text-primary"></div><p class="mt-2">Loading projects...</p></div>
+            <div id="content" style="display:none;">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3"><h6 class="m-0 fw-bold text-primary">Projects List</h6></div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead><tr><th>Title</th><th>Description</th><th>Deadline</th><th>Total Marks</th></tr></thead>
+                                <tbody id="projectsTable"></tbody>
+                            </table>
+                        </div>
+                        <div id="emptyState" class="text-center py-4 text-muted"><p>Select a batch to view projects.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function logout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).then(()=>{window.location.href='/login'}).catch(()=>{window.location.href='/login'})}
+async function init(){
+    try {
+        const res = await fetch('/api/admin/batches', {credentials:'include'});
+        if (res.status === 401 || res.status === 403) { window.location.href = '/login'; return; }
+        const batches = await res.json();
+        const sel = document.getElementById('batchSelect');
+        batches.forEach(b => { sel.innerHTML += `<option value="${b.id}">${b.name}</option>`; });
+        document.getElementById('content').style.display = '';
+    } catch(e) { console.error(e); }
+}
+
+async function loadProjects(){
+    const batchId = document.getElementById('batchSelect').value;
+    if (!batchId) {
+        document.getElementById('projectsTable').innerHTML = '';
+        document.getElementById('emptyState').style.display = '';
+        return;
+    }
+    document.getElementById('loading').style.display = '';
+    document.getElementById('emptyState').style.display = 'none';
+    try {
+        const res = await fetch(`/api/trainer/batches/${batchId}/projects`, {credentials:'include'});
+        const data = await res.json();
+        const tbody = document.getElementById('projectsTable');
+        tbody.innerHTML = '';
+        if (data.length === 0) {
+            document.getElementById('emptyState').style.display = '';
+        } else {
+            data.forEach(p => {
+                tbody.innerHTML += `
+                <tr>
+                    <td><strong>${p.title||''}</strong></td>
+                    <td>${p.description||''}</td>
+                    <td>${p.deadline||'-'}</td>
+                    <td>${p.totalMarks}</td>
+                </tr>`;
+            });
+        }
+    } catch(e) { console.error(e); }
+    document.getElementById('loading').style.display = 'none';
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Trainer Attendance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar { min-height: 100vh; background-image: linear-gradient(180deg, #1cc88a 10%, #13855c 100%); color: white; }
+        .sidebar .nav-link { color: rgba(255,255,255,.8); font-weight: 500; padding: 12px 20px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Trainer Panel</small>
+            </div><hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/trainer/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/batches"><i class="bi bi-collection me-2"></i>My Batches</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/trainer/attendance"><i class="bi bi-calendar-check me-2"></i>Attendance</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/assignments"><i class="bi bi-file-earmark-text me-2"></i>Assignments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/exams"><i class="bi bi-journal-check me-2"></i>Exams</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/projects"><i class="bi bi-code-square me-2"></i>Projects</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/evaluations"><i class="bi bi-journal-bookmark-fill me-2"></i>Evaluations</a></li>
+                <li class="nav-item mt-4"><a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+            </ul>
+        </div>
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Mark Attendance</h1>
+            </div>
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Select Batch</label>
+                            <select class="form-select" id="batchSelect" onchange="onBatchSelect()"><option value="">-- Choose Batch --</option></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Date</label>
+                            <input type="date" class="form-control" id="attendanceDate">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="loading" class="text-center py-5" style="display:none;"><div class="spinner-border text-success"></div><p class="mt-2">Loading students...</p></div>
+            <div id="studentsCard" class="card shadow mb-4" style="display:none;">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 fw-bold text-success">Students List</h6>
+                    <button class="btn btn-sm btn-primary" onclick="markAll('PRESENT')">Mark All Present</button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped align-middle">
+                            <thead><tr><th>Student Name</th><th>Email</th><th>Status</th><th>Remarks</th></tr></thead>
+                            <tbody id="studentsTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="text-end mt-3">
+                        <button class="btn btn-success btn-lg" onclick="saveAttendance()"><i class="bi bi-check-circle me-1"></i>Save Attendance</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function logout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).then(()=>{window.location.href='/login'}).catch(()=>{window.location.href='/login'})}
+document.getElementById('attendanceDate').valueAsDate = new Date();
+async function loadBatches(){
+    try{
+        const res=await fetch('/api/trainer/batches',{credentials:'include'});
+        if(res.status===401||res.status===403){window.location.href='/login';return}
+        const data=await res.json();
+        const sel=document.getElementById('batchSelect');
+        data.forEach(b=>{
+            const bName = b.batchName || b.name || ('Batch #' + b.id);
+            sel.innerHTML += `<option value="${b.id}">${bName}</option>`;
+        });
+    }catch(e){console.error(e)}
+}
+async function onBatchSelect() {
+    const batchId = document.getElementById('batchSelect').value;
+    if (!batchId) {
+        document.getElementById('studentsCard').style.display = 'none';
+        return;
+    }
+    document.getElementById('loading').style.display = '';
+    document.getElementById('studentsCard').style.display = 'none';
+    try {
+        const res = await fetch(`/api/trainer/batches/${batchId}/students`, {credentials:'include'});
+        if (res.ok) {
+            const students = await res.json();
+            const tbody = document.getElementById('studentsTableBody');
+            tbody.innerHTML = '';
+            students.forEach(s => {
+                tbody.innerHTML += `
+                <tr data-student-id="${s.id}">
+                    <td><strong>${s.name||''}</strong></td>
+                    <td>${s.email||''}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="status-${s.id}" id="present-${s.id}" value="PRESENT" checked>
+                            <label class="btn btn-outline-success btn-sm" for="present-${s.id}">Present</label>
+                            <input type="radio" class="btn-check" name="status-${s.id}" id="late-${s.id}" value="LATE">
+                            <label class="btn btn-outline-warning btn-sm" for="late-${s.id}">Late</label>
+                            <input type="radio" class="btn-check" name="status-${s.id}" id="absent-${s.id}" value="ABSENT">
+                            <label class="btn btn-outline-danger btn-sm" for="absent-${s.id}">Absent</label>
+                        </div>
+                    </td>
+                    <td><input type="text" class="form-control form-control-sm" name="remarks-${s.id}" placeholder="Optional remarks"></td>
+                </tr>`;
+            });
+            document.getElementById('studentsCard').style.display = '';
+        }
+    } catch(e) {
+        console.error(e);
+        alert('Error loading students');
+    }
+    document.getElementById('loading').style.display = 'none';
+}
+function markAll(status) {
+    const radios = document.querySelectorAll(`input[value="${status}"]`);
+    radios.forEach(r => r.checked = true);
+}
+async function saveAttendance() {
+    const batchId = document.getElementById('batchSelect').value;
+    const date = document.getElementById('attendanceDate').value;
+    if (!batchId || !date) { alert('Please select batch and date'); return; }
+    
+    const rows = document.querySelectorAll('#studentsTableBody tr');
+    const records = [];
+    rows.forEach(row => {
+        const studentId = row.getAttribute('data-student-id');
+        const status = row.querySelector(`input[name="status-${studentId}"]:checked`).value;
+        const remarks = row.querySelector(`input[name="remarks-${studentId}"]`).value;
+        records.push({ studentId: parseInt(studentId), status, remarks });
+    });
+
+    try {
+        const res = await fetch('/api/trainer/attendance', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ batchId: parseInt(batchId), date, records })
+        });
+        if (res.ok) {
+            alert('Attendance marked successfully!');
+        } else {
+            const e = await res.json();
+            alert(e.message || 'Error saving attendance');
+        }
+    } catch(e) {
+        console.error(e);
+        alert('Failed to save attendance');
+    }
+}
+loadBatches();
+</script>
+</body>
+</html>

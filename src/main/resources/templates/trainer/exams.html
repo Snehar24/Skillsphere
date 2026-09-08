@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Exams</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar { min-height: 100vh; background-image: linear-gradient(180deg, #1cc88a 10%, #13855c 100%); color: white; }
+        .sidebar .nav-link { color: rgba(255,255,255,.8); font-weight: 500; padding: 12px 20px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Trainer Panel</small>
+            </div><hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/trainer/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/batches"><i class="bi bi-collection me-2"></i>My Batches</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/attendance"><i class="bi bi-calendar-check me-2"></i>Attendance</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/assignments"><i class="bi bi-file-earmark-text me-2"></i>Assignments</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/trainer/exams"><i class="bi bi-journal-check me-2"></i>Exams</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/projects"><i class="bi bi-code-square me-2"></i>Projects</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/evaluations"><i class="bi bi-journal-bookmark-fill me-2"></i>Evaluations</a></li>
+                <li class="nav-item mt-4"><a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+            </ul>
+        </div>
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Exams</h1>
+                <div>
+                    <select class="form-select d-inline-block w-auto me-2" id="batchSelect" onchange="loadExams()"><option value="">-- Choose Batch --</option></select>
+                    <button class="btn btn-success me-1" data-bs-toggle="modal" data-bs-target="#createModal"><i class="bi bi-plus-circle me-1"></i>Create Exam</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal"><i class="bi bi-upload me-1"></i>Upload Exam Doc</button>
+                </div>
+            </div>
+            <div id="loading" class="text-center py-5" style="display:none;"><div class="spinner-border text-success"></div><p class="mt-2">Loading exams...</p></div>
+            <div id="content" style="display:none;">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3"><h6 class="m-0 fw-bold text-success">Exams List</h6></div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead><tr><th>Title</th><th>Duration</th><th>Total Marks</th><th>Start Time</th><th>End Time</th><th>Actions</th></tr></thead>
+                                <tbody id="examsTable"></tbody>
+                            </table>
+                        </div>
+                        <div id="emptyState" class="text-center py-4 text-muted"><p>Select a batch to load exams or create a new one.</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Exam Modal -->
+<div class="modal fade" id="createModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Create Exam</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Batch</label><select class="form-select" id="createBatchId"></select></div>
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="createTitle" required></div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="createDesc" rows="3"></textarea></div>
+        <div class="mb-3"><label class="form-label">Duration (Minutes)</label><input type="number" class="form-control" id="createDuration" value="60"></div>
+        <div class="mb-3"><label class="form-label">Total Marks</label><input type="number" class="form-control" id="createMarks" value="100"></div>
+        <div class="mb-3"><label class="form-label">Allowed Attempts</label><input type="number" class="form-control" id="createAttempts" value="1"></div>
+        <div class="mb-3"><label class="form-label">Start Time</label><input type="datetime-local" class="form-control" id="createStart"></div>
+        <div class="mb-3"><label class="form-label">End Time</label><input type="datetime-local" class="form-control" id="createEnd"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" onclick="createExam()">Create</button></div>
+</div></div></div>
+
+<!-- Upload Exam Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Upload Exam Document</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="mb-3"><label class="form-label">Batch</label><select class="form-select" id="uploadBatchId"></select></div>
+        <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="uploadTitle" required></div>
+        <div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="uploadDesc" rows="3"></textarea></div>
+        <div class="mb-3"><label class="form-label">Duration (Minutes)</label><input type="number" class="form-control" id="uploadDuration" value="60"></div>
+        <div class="mb-3"><label class="form-label">Allowed Attempts</label><input type="number" class="form-control" id="uploadAttempts" value="1"></div>
+        <div class="mb-3"><label class="form-label">Select Document (.txt)</label><input type="file" class="form-control" id="uploadFile" accept=".txt"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" onclick="uploadExamDoc()">Upload & Create</button></div>
+</div></div></div>
+
+<!-- Add Question Modal -->
+<div class="modal fade" id="questionModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Add MCQ Question</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <input type="hidden" id="questionExamId">
+        <div class="mb-3"><label class="form-label">Question Text</label><textarea class="form-control" id="qText" rows="3" required></textarea></div>
+        <div class="mb-3"><label class="form-label">Option A</label><input type="text" class="form-control" id="qOptA" required></div>
+        <div class="mb-3"><label class="form-label">Option B</label><input type="text" class="form-control" id="qOptB" required></div>
+        <div class="mb-3"><label class="form-label">Option C</label><input type="text" class="form-control" id="qOptC" required></div>
+        <div class="mb-3"><label class="form-label">Option D</label><input type="text" class="form-control" id="qOptD" required></div>
+        <div class="mb-3"><label class="form-label">Correct Answer</label><select class="form-select" id="qCorrect"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
+        <div class="mb-3"><label class="form-label">Marks</label><input type="number" class="form-control" id="qMarks" value="5"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" onclick="addQuestion()">Add Question</button></div>
+</div></div></div>
+
+<!-- Submissions Modal -->
+<div class="modal fade" id="resultsModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Exam Results</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead><tr><th>Student</th><th>Submission Date</th><th>Marks Obtained</th><th>Total Marks</th><th>Passed</th></tr></thead>
+                <tbody id="resultsTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function logout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).then(()=>{window.location.href='/login'}).catch(()=>{window.location.href='/login'})}
+async function init(){
+    try {
+        const res = await fetch('/api/trainer/batches', {credentials:'include'});
+        if (res.status === 401 || res.status === 403) { window.location.href = '/login'; return; }
+        const batches = await res.json();
+        const sel = document.getElementById('batchSelect');
+        const csel = document.getElementById('createBatchId');
+        const usel = document.getElementById('uploadBatchId');
+        batches.forEach(b => {
+            sel.innerHTML += `<option value="${b.id}">${b.batchName}</option>`;
+            csel.innerHTML += `<option value="${b.id}">${b.batchName}</option>`;
+            usel.innerHTML += `<option value="${b.id}">${b.batchName}</option>`;
+        });
+        document.getElementById('content').style.display = '';
+    } catch(e) { console.error(e); }
+}
+
+async function loadExams(){
+    const batchId = document.getElementById('batchSelect').value;
+    if (!batchId) {
+        document.getElementById('examsTable').innerHTML = '';
+        document.getElementById('emptyState').style.display = '';
+        return;
+    }
+    document.getElementById('loading').style.display = '';
+    document.getElementById('emptyState').style.display = 'none';
+    try {
+        const res = await fetch(`/api/trainer/batches/${batchId}/exams`, {credentials:'include'});
+        const data = await res.json();
+        const tbody = document.getElementById('examsTable');
+        tbody.innerHTML = '';
+        if (data.length === 0) {
+            document.getElementById('emptyState').style.display = '';
+        } else {
+            data.forEach(e => {
+                tbody.innerHTML += `
+                <tr>
+                    <td><strong>${e.title||''}</strong></td>
+                    <td>${e.duration} mins</td>
+                    <td>${e.totalMarks}</td>
+                    <td>${e.startTime?new Date(e.startTime).toLocaleString():'-'}</td>
+                    <td>${e.endTime?new Date(e.endTime).toLocaleString():'-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary me-1" onclick="openAddQuestion(${e.id})"><i class="bi bi-plus-circle"></i> Add Q</button>
+                        <button class="btn btn-sm btn-info text-white me-1" onclick="viewResults(${e.id})"><i class="bi bi-eye"></i> Results</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteExam(${e.id})"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`;
+            } );
+        }
+    } catch(e) { console.error(e); }
+    document.getElementById('loading').style.display = 'none';
+}
+
+async function createExam(){
+    const batchId = document.getElementById('createBatchId').value;
+    const title = document.getElementById('createTitle').value;
+    const description = document.getElementById('createDesc').value;
+    const duration = document.getElementById('createDuration').value;
+    const totalMarks = document.getElementById('createMarks').value;
+    const startTime = document.getElementById('createStart').value;
+    const endTime = document.getElementById('createEnd').value;
+    const allowedAttempts = document.getElementById('createAttempts').value;
+
+    if(!batchId || !title) { alert('Batch and Title are required'); return; }
+
+    try {
+        const res = await fetch('/api/trainer/exams', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ batchId: parseInt(batchId), title, description, duration: parseInt(duration), totalMarks: parseInt(totalMarks), startTime, endTime, allowedAttempts: parseInt(allowedAttempts||1) })
+        });
+        if(res.ok){
+            bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
+            document.getElementById('batchSelect').value = batchId;
+            loadExams();
+            alert('Exam created successfully!');
+        } else {
+            alert('Failed to create exam');
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function uploadExamDoc(){
+    const batchId = document.getElementById('uploadBatchId').value;
+    const title = document.getElementById('uploadTitle').value;
+    const description = document.getElementById('uploadDesc').value;
+    const duration = document.getElementById('uploadDuration').value;
+    const allowedAttempts = document.getElementById('uploadAttempts').value;
+    const fileInput = document.getElementById('uploadFile');
+
+    if(!batchId || !title || !fileInput.files[0]) { alert('Batch, Title, and File are required'); return; }
+
+    const formData = new FormData();
+    formData.append('batchId', batchId);
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('duration', duration);
+    formData.append('allowedAttempts', allowedAttempts);
+    formData.append('file', fileInput.files[0]);
+
+    try {
+        const res = await fetch('/api/trainer/exams/upload', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
+        if(res.ok){
+            bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+            document.getElementById('batchSelect').value = batchId;
+            loadExams();
+            alert('Exam document uploaded and parsed successfully!');
+        } else {
+            alert('Failed to upload/parse exam document');
+        }
+    } catch(e) { console.error(e); }
+}
+
+function openAddQuestion(examId) {
+    document.getElementById('questionExamId').value = examId;
+    document.getElementById('qText').value = '';
+    document.getElementById('qOptA').value = '';
+    document.getElementById('qOptB').value = '';
+    document.getElementById('qOptC').value = '';
+    document.getElementById('qOptD').value = '';
+    new bootstrap.Modal(document.getElementById('questionModal')).show();
+}
+
+async function addQuestion() {
+    const examId = document.getElementById('questionExamId').value;
+    const questionText = document.getElementById('qText').value;
+    const optionA = document.getElementById('qOptA').value;
+    const optionB = document.getElementById('qOptB').value;
+    const optionC = document.getElementById('qOptC').value;
+    const optionD = document.getElementById('qOptD').value;
+    const correctAnswer = document.getElementById('qCorrect').value;
+    const marks = document.getElementById('qMarks').value;
+
+    try {
+        const res = await fetch(`/api/trainer/exams/${examId}/questions`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ questionText, optionA, optionB, optionC, optionD, correctAnswer, marks: parseInt(marks) })
+        });
+        if(res.ok){
+            bootstrap.Modal.getInstance(document.getElementById('questionModal')).hide();
+            alert('Question added successfully!');
+        } else {
+            alert('Failed to add question');
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function viewResults(examId) {
+    const tbody = document.getElementById('resultsTableBody');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center"><div class="spinner-border spinner-border-sm text-success"></div> Loading...</td></tr>';
+    new bootstrap.Modal(document.getElementById('resultsModal')).show();
+    try {
+        const res = await fetch(`/api/trainer/exams/${examId}/submissions`, {credentials:'include'});
+        if(res.ok){
+            const data = await res.json();
+            tbody.innerHTML = '';
+            if(data.length === 0){
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No student has taken this exam yet.</td></tr>';
+            } else {
+                data.forEach(r => {
+                    tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${r.studentName||''}</strong></td>
+                        <td>${r.submittedAt?new Date(r.submittedAt).toLocaleString():'-'}</td>
+                        <td>${r.score !== null ? r.score : 0}</td>
+                        <td>${r.maxMarks !== null ? r.maxMarks : 0}</td>
+                        <td><span class="badge ${r.result === 'PASS'?'bg-success':'bg-danger'}">${r.result || 'FAILED'}</span></td>
+                    </tr>`;
+                });
+            }
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function deleteExam(id) {
+    if (!confirm('Are you sure you want to delete this exam? All questions, attempts, and student results will be cascading-deleted.')) return;
+    try {
+        const res = await fetch(`/api/trainer/exams/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+        if (res.ok) {
+            loadExams();
+            alert('Exam deleted successfully!');
+        } else {
+            alert('Failed to delete exam. Are you authorized?');
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+init();
+</script>
+</body>
+</html>

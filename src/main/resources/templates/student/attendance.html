@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - My Attendance</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar { min-height: 100vh; background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%); color: white; }
+        .sidebar .nav-link { color: rgba(255,255,255,.8); font-weight: 500; padding: 12px 20px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Student Panel</small>
+            </div>
+            <hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/student/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/student/attendance"><i class="bi bi-calendar-check me-2"></i>My Attendance</a></li>
+                <li class="nav-item"><a class="nav-link" href="/student/assignments"><i class="bi bi-file-earmark-text me-2"></i>Assignments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/student/exams"><i class="bi bi-journal-check me-2"></i>Exams</a></li>
+                <li class="nav-item"><a class="nav-link" href="/student/projects"><i class="bi bi-code-square me-2"></i>Projects</a></li>
+                <li class="nav-item"><a class="nav-link" href="/student/certificates"><i class="bi bi-journal-bookmark-fill me-2"></i>Certificates</a></li>
+                <li class="nav-item"><a class="nav-link" href="/student/payments"><i class="bi bi-credit-card me-2"></i>Payments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/announcements"><i class="bi bi-megaphone me-2"></i>Broadcasts</a></li>
+                <li class="nav-item"><a class="nav-link" href="/verify-certificate"><i class="bi bi-shield-check me-2"></i>Public Verify</a></li>
+                <li class="nav-item mt-4"><a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+            </ul>
+        </div>
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <div>
+                    <h1 class="h2 mb-0">My Attendance</h1>
+                    <small class="text-muted">Track your live attendance status, session frequency, and certificate eligibility criteria (&ge; 70%)</small>
+                </div>
+            </div>
+            <div id="loading" class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Loading attendance records...</p></div>
+            <div id="content" style="display:none;">
+                <div class="row mb-4" id="summaryCards"></div>
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 fw-bold text-primary">Attendance History</h6>
+                        <span class="badge bg-light text-dark border" id="certEligibilityBadge">Checking Eligibility...</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover align-middle">
+                                <thead class="table-light"><tr><th>Batch</th><th>Date</th><th>Status</th><th>Remarks</th></tr></thead>
+                                <tbody id="attendanceTable"></tbody>
+                            </table>
+                        </div>
+                        <div id="emptyState" class="text-center py-5 text-muted" style="display:none;">
+                            <i class="bi bi-calendar-x fs-1"></i>
+                            <p class="mt-2">No attendance records have been marked for your enrolled batches yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+function logout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).then(()=>{window.location.href='/login'}).catch(()=>{window.location.href='/login'})}
+function statusBadge(s){
+    const m={PRESENT:'bg-success text-white',ABSENT:'bg-danger text-white',LATE:'bg-warning text-dark'};
+    return `<span class="badge ${m[s]||'bg-secondary'} px-2 py-1">${s}</span>`;
+}
+
+async function load(){
+    try {
+        const sumRes = await fetch('/api/student/attendance/summary', {credentials:'include'});
+        let s = { totalClasses: 0, present: 0, late: 0, absent: 0, percentage: 0 };
+        if (sumRes.ok) {
+            s = await sumRes.json();
+        }
+        
+        const pct = (typeof s.percentage === 'number') ? s.percentage : 0;
+        const eligBadge = document.getElementById('certEligibilityBadge');
+        if (pct >= 70.0) {
+            eligBadge.className = 'badge bg-success text-white';
+            eligBadge.innerHTML = '<i class="bi bi-check-circle me-1"></i>Eligible for Certificate (&ge; 70%)';
+        } else {
+            eligBadge.className = 'badge bg-warning text-dark';
+            eligBadge.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>Requires &ge; 70% for Certificate (Current: ${pct}%)`;
+        }
+
+        document.getElementById('summaryCards').innerHTML=`
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-0 border-start border-primary border-4 shadow h-100 py-2">
+                    <div class="card-body py-2">
+                        <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total Sessions</div>
+                        <div class="h4 mb-0 fw-bold">${s.totalClasses}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-0 border-start border-success border-4 shadow h-100 py-2">
+                    <div class="card-body py-2">
+                        <div class="text-xs fw-bold text-success text-uppercase mb-1">Attended (Present)</div>
+                        <div class="h4 mb-0 fw-bold text-success">${s.present}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-0 border-start border-warning border-4 shadow h-100 py-2">
+                    <div class="card-body py-2">
+                        <div class="text-xs fw-bold text-warning text-uppercase mb-1">Late</div>
+                        <div class="h4 mb-0 fw-bold text-warning">${s.late}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-3">
+                <div class="card border-0 border-start border-${pct >= 70 ? 'info' : 'danger'} border-4 shadow h-100 py-2">
+                    <div class="card-body py-2">
+                        <div class="text-xs fw-bold text-${pct >= 70 ? 'info' : 'danger'} text-uppercase mb-1">Attendance %</div>
+                        <div class="h4 mb-0 fw-bold text-${pct >= 70 ? 'info' : 'danger'}">${pct}%</div>
+                    </div>
+                </div>
+            </div>`;
+
+        const res = await fetch('/api/student/attendance', {credentials:'include'});
+        if (res.status === 401 || res.status === 403) { window.location.href = '/login'; return; }
+        const data = await res.json();
+        const tb = document.getElementById('attendanceTable');
+        tb.innerHTML = '';
+        
+        if (!data || data.length === 0) {
+            document.getElementById('emptyState').style.display = '';
+        } else {
+            document.getElementById('emptyState').style.display = 'none';
+            data.forEach(a => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${a.batchName || 'Batch #' + a.batchId}</strong></td>
+                    <td>${a.date || '-'}</td>
+                    <td>${statusBadge(a.status)}</td>
+                    <td>${a.remarks || '-'}</td>`;
+                tb.appendChild(row);
+            });
+        }
+    } catch(e) { 
+        console.error(e); 
+    }
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = '';
+}
+load();
+</script>
+</body>
+</html>

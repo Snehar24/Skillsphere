@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Admin Certificates</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar { min-height: 100vh; background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%); color: white; }
+        .sidebar .nav-link { color: rgba(255,255,255,.8); font-weight: 500; padding: 12px 20px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Admin Panel</small>
+            </div><hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/admin/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/students"><i class="bi bi-people me-2"></i>Students</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/trainers"><i class="bi bi-person-badge me-2"></i>Trainers</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/courses"><i class="bi bi-book-half me-2"></i>Courses</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/batches"><i class="bi bi-collection me-2"></i>Batches</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/attendance"><i class="bi bi-calendar-check me-2"></i>Attendance</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/enrollments"><i class="bi bi-journals me-2"></i>Enrollments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/payments"><i class="bi bi-credit-card me-2"></i>Payments</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/admin/certificates"><i class="bi bi-award me-2"></i>Certificates</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/announcements"><i class="bi bi-megaphone me-2"></i>Broadcasts</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/audit-logs"><i class="bi bi-shield-lock-fill me-2"></i>Audit Logs</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/reports"><i class="bi bi-graph-up-arrow me-2"></i>Reports</a></li>
+                <li class="nav-item mt-4"><a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+            </ul>
+        </div>
+
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <div>
+                    <h1 class="h2 mb-0">Generated Credentials & Certificates</h1>
+                    <small class="text-muted">Overview of all officially awarded student certificates and online verification credentials</small>
+                </div>
+                <button class="btn btn-success" onclick="openGenerateModal()"><i class="bi bi-plus-circle me-1"></i>Generate Certificate</button>
+            </div>
+
+            <div id="loading" class="text-center py-5" style="display:none;"><div class="spinner-border text-primary"></div><p class="mt-2">Loading certificates...</p></div>
+            
+            <div id="content" style="display:none;">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center bg-white">
+                        <h6 class="m-0 fw-bold text-primary"><i class="bi bi-patch-check-fill me-2"></i>Issued Certificates</h6>
+                        <input type="text" class="form-control form-control-sm w-25" id="certSearch" placeholder="Search certificates..." onkeyup="filterCertTable()">
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Certificate Number</th>
+                                        <th>Student Name</th>
+                                        <th>Course</th>
+                                        <th>Grade</th>
+                                        <th>Score</th>
+                                        <th>Issued By</th>
+                                        <th>Issue Date</th>
+                                        <th>Verification Code</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="certificatesTable"></tbody>
+                            </table>
+                        </div>
+                        <div id="emptyState" class="text-center py-5 text-muted" style="display:none;">
+                            <i class="bi bi-award fs-1 text-muted d-block mb-2"></i>
+                            <p>No generated certificates found in the system.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Modal -->
+<div class="modal fade" id="generateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Generate Certificate</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label fw-bold">Student</label><select class="form-select" id="genStudentId"></select></div>
+                <div class="mb-3"><label class="form-label fw-bold">Course</label><select class="form-select" id="genCourseId"></select></div>
+                <div class="mb-3"><label class="form-label fw-bold">Final Score (%)</label><input type="number" class="form-control" id="genScore" value="85" min="50" max="100"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success" onclick="generateCertificate()"><i class="bi bi-check-circle me-1"></i>Generate Certificate</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function logout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).then(()=>{window.location.href='/login'}).catch(()=>{window.location.href='/login'})}
+
+let allCerts = [];
+let genModalInstance;
+
+async function load(){
+    genModalInstance = new bootstrap.Modal(document.getElementById('generateModal'));
+    document.getElementById('loading').style.display = '';
+    try {
+        const res = await fetch('/api/admin/certificates', {credentials:'include'});
+        if (res.status === 401 || res.status === 403) { window.location.href = '/login'; return; }
+        allCerts = await res.json();
+        renderTable(allCerts);
+    } catch(e) { console.error(e); }
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = '';
+}
+
+function renderTable(data){
+    const tbody = document.getElementById('certificatesTable');
+    tbody.innerHTML = '';
+    if (!data || data.length === 0) {
+        document.getElementById('emptyState').style.display = '';
+        return;
+    }
+    document.getElementById('emptyState').style.display = 'none';
+
+    data.forEach(c => {
+        tbody.innerHTML += `
+        <tr>
+            <td><strong><code>${c.certificateNumber || ''}</code></strong></td>
+            <td><strong>${c.studentName || ''}</strong><br><small class="text-muted">${c.registrationNumber || ''}</small></td>
+            <td>${c.courseName || ''}</td>
+            <td><span class="badge bg-success">${c.grade || 'A'}</span></td>
+            <td><strong>${c.score ? c.score.toFixed(1) + '%' : '-'}</strong></td>
+            <td><small class="text-muted">${c.trainerName || 'Academic Dean'}</small></td>
+            <td>${c.issueDate ? new Date(c.issueDate).toLocaleDateString() : '-'}</td>
+            <td><code class="text-primary">${c.verificationCode || c.certificateNumber || ''}</code></td>
+            <td>
+                <a href="/verify-certificate?code=${encodeURIComponent(c.verificationCode || c.certificateNumber || '')}" target="_blank" class="btn btn-sm btn-outline-primary" title="Verify Online">
+                    <i class="bi bi-shield-check me-1"></i>Verify
+                </a>
+            </td>
+        </tr>`;
+    });
+}
+
+function filterCertTable(){
+    const q = document.getElementById('certSearch').value.toLowerCase().trim();
+    if (!q) {
+        renderTable(allCerts);
+        return;
+    }
+    const filtered = allCerts.filter(c => {
+        return (c.certificateNumber && c.certificateNumber.toLowerCase().includes(q)) ||
+               (c.studentName && c.studentName.toLowerCase().includes(q)) ||
+               (c.courseName && c.courseName.toLowerCase().includes(q)) ||
+               (c.verificationCode && c.verificationCode.toLowerCase().includes(q));
+    });
+    renderTable(filtered);
+}
+
+async function openGenerateModal() {
+    genModalInstance.show();
+    try {
+        const sRes = await fetch('/api/admin/students', {credentials:'include'});
+        const cRes = await fetch('/api/admin/courses', {credentials:'include'});
+        if (sRes.ok && cRes.ok) {
+            const students = await sRes.json();
+            const courses = await cRes.json();
+            
+            const studentSel = document.getElementById('genStudentId');
+            studentSel.innerHTML = '';
+            const sList = students.content || students;
+            sList.forEach(s => { 
+                const sName = s.name || s.fullName || s.email;
+                studentSel.innerHTML += `<option value="${s.id}">${sName} (${s.registrationNumber || s.email})</option>`; 
+            });
+
+            const courseSel = document.getElementById('genCourseId');
+            courseSel.innerHTML = '';
+            const cList = courses.content || courses;
+            cList.forEach(c => { courseSel.innerHTML += `<option value="${c.id}">${c.name}</option>`; });
+        }
+    } catch(e) { console.error(e); }
+}
+
+async function generateCertificate() {
+    const studentId = document.getElementById('genStudentId').value;
+    const courseId = document.getElementById('genCourseId').value;
+    const score = document.getElementById('genScore').value;
+
+    if(!studentId || !courseId) { alert('Please select a student and course'); return; }
+
+    try {
+        const res = await fetch(`/api/admin/certificates?studentId=${studentId}&courseId=${courseId}&score=${score}`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+        if(res.ok){
+            genModalInstance.hide();
+            load();
+            alert('Certificate generated successfully!');
+        } else {
+            const err = await res.json();
+            alert('Failed to generate certificate: ' + (err.message || 'Error occurred'));
+        }
+    } catch(e) { console.error(e); }
+}
+
+load();
+</script>
+</body>
+</html>

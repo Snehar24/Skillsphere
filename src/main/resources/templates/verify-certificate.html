@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere — Public Certificate Verification</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+        .cert-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+        }
+        .verified-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            font-weight: bold;
+        }
+        .cert-frame {
+            border: 8px double #4f46e5;
+            padding: 30px;
+            background: #fffdf5;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <nav class="navbar navbar-dark bg-dark py-3" style="background-color: #0f172a !important;">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center text-white" href="/">
+                <i class="bi bi-mortarboard-fill text-warning me-2 fs-4"></i>SkillSphere
+            </a>
+            <div>
+                <a href="/" class="btn btn-outline-light btn-sm me-2"><i class="bi bi-house me-1"></i>Home</a>
+                <a href="/login" class="btn btn-warning btn-sm text-dark fw-bold"><i class="bi bi-box-arrow-in-right me-1"></i>Sign In</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="text-center mb-5">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary rounded-circle p-3 mb-3">
+                <i class="bi bi-patch-check-fill fs-1"></i>
+            </div>
+            <h2 class="fw-bold">Certificate Verification Portal</h2>
+            <p class="text-muted">Enter a verification code or certificate number below to validate authenticity</p>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <!-- Search Card -->
+                <div class="card cert-card p-4 p-md-5 mb-4">
+                    <form onsubmit="handleVerify(event)">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-muted small">Verification Code / Certificate Number</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-white"><i class="bi bi-qr-code text-muted"></i></span>
+                                <input type="text" class="form-control" id="certQuery" placeholder="e.g. SKILL-VERIFY-1-ABC12345 or CERT-1-..." required>
+                                <button type="submit" id="verifyBtn" class="btn btn-primary px-4 fw-bold">
+                                    <i class="bi bi-search me-1"></i>Verify
+                                </button>
+                            </div>
+                            <div class="form-text small mt-2">Example: Check the verification code or certificate number printed on the bottom of the certificate.</div>
+                        </div>
+                    </form>
+
+                    <div id="loading" class="text-center py-4 d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="text-muted small mt-2">Verifying authenticity with SkillSphere Registry...</p>
+                    </div>
+
+                    <div id="errorAlert" class="alert alert-danger d-none mt-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i><span id="errorMsg">Certificate not found.</span>
+                    </div>
+                </div>
+
+                <!-- Verified Result Display -->
+                <div id="certResult" class="cert-card p-4 d-none">
+                    <div class="text-center mb-4">
+                        <div class="verified-badge mb-3 shadow-sm">
+                            <i class="bi bi-shield-fill-check fs-5 me-2"></i>OFFICIALLY VERIFIED & VALID
+                        </div>
+                        <h4 class="fw-bold text-dark">Certificate of Completion</h4>
+                        <p class="text-muted small">This is to certify that the credential below was issued by the SkillSphere Platform.</p>
+                    </div>
+
+                    <div class="cert-frame mb-4">
+                        <div class="text-center mb-3">
+                            <h3 class="text-primary fw-bold mb-1" id="resStudentName">-</h3>
+                            <span class="text-muted small">Registration Number: <strong id="resRegNo" class="text-dark">-</strong></span>
+                        </div>
+                        <p class="text-center text-muted mb-3">has successfully completed the comprehensive training program & final assessment for</p>
+                        <h4 class="text-center fw-bold text-dark mb-3" id="resCourseName">-</h4>
+                        <div class="row text-center mt-4 pt-3 border-top border-secondary border-opacity-25">
+                            <div class="col-4">
+                                <span class="small text-muted d-block">ISSUE DATE</span>
+                                <strong id="resIssueDate" class="text-dark">-</strong>
+                            </div>
+                            <div class="col-4">
+                                <span class="small text-muted d-block">OVERALL SCORE</span>
+                                <strong id="resScore" class="text-success fs-5">-</strong>
+                            </div>
+                            <div class="col-4">
+                                <span class="small text-muted d-block">STATUS</span>
+                                <span class="badge bg-success" id="resStatus">ISSUED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 small">
+                        <div class="row">
+                            <div class="col-sm-6 mb-1">
+                                <strong>Certificate No:</strong> <span id="resCertNo">-</span>
+                            </div>
+                            <div class="col-sm-6 mb-1">
+                                <strong>Verification Code:</strong> <span id="resVerifyCode" class="font-monospace text-primary">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-printer me-1"></i>Print Verification Record
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function handleVerify(e) {
+            e.preventDefault();
+            const query = document.getElementById('certQuery').value.trim();
+            if (!query) return;
+
+            document.getElementById('loading').classList.remove('d-none');
+            document.getElementById('errorAlert').classList.add('d-none');
+            document.getElementById('certResult').classList.add('d-none');
+            const btn = document.getElementById('verifyBtn');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/api/certificates/verify/${encodeURIComponent(query)}`);
+                document.getElementById('loading').classList.add('d-none');
+                btn.disabled = false;
+
+                if (res.ok) {
+                    const cert = await res.json();
+                    document.getElementById('resStudentName').innerText = cert.studentName || 'Student';
+                    document.getElementById('resRegNo').innerText = cert.registrationNumber || 'N/A';
+                    document.getElementById('resCourseName').innerText = cert.courseName || 'Course';
+                    document.getElementById('resIssueDate').innerText = cert.issueDate ? new Date(cert.issueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+                    document.getElementById('resScore').innerText = cert.score ? cert.score.toFixed(1) + '%' : 'PASSED';
+                    document.getElementById('resCertNo').innerText = cert.certificateNumber;
+                    document.getElementById('resVerifyCode').innerText = cert.verificationCode || cert.certificateNumber;
+                    document.getElementById('certResult').classList.remove('d-none');
+                } else {
+                    const err = await res.json();
+                    document.getElementById('errorMsg').innerText = err.message || 'No matching certificate found in SkillSphere registry.';
+                    document.getElementById('errorAlert').classList.remove('d-none');
+                }
+            } catch (err) {
+                document.getElementById('loading').classList.add('d-none');
+                btn.disabled = false;
+                document.getElementById('errorMsg').innerText = 'Network error during verification. Please try again.';
+                document.getElementById('errorAlert').classList.remove('d-none');
+            }
+        }
+
+        // Check if query is pre-passed in URL param ?code=
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            if (code) {
+                document.getElementById('certQuery').value = code;
+                document.getElementById('verifyBtn').click();
+            }
+        });
+    </script>
+</body>
+</html>

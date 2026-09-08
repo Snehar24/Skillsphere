@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkillSphere - Assignments</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fc; }
+        .sidebar { min-height: 100vh; background-image: linear-gradient(180deg, #1cc88a 10%, #13855c 100%); color: white; }
+        .sidebar .nav-link { color: rgba(255,255,255,.8); font-weight: 500; padding: 12px 20px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background-color: rgba(255,255,255,.1); }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar d-none d-md-block px-0">
+            <div class="p-3 text-center">
+                <h4 class="text-white mb-0"><i class="bi bi-globe-americas me-2"></i>SkillSphere</h4>
+                <small class="text-white-50">Trainer Panel</small>
+            </div><hr class="my-0">
+            <ul class="nav flex-column mt-3">
+                <li class="nav-item"><a class="nav-link" href="/trainer/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/batches"><i class="bi bi-collection me-2"></i>My Batches</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/attendance"><i class="bi bi-calendar-check me-2"></i>Attendance</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/trainer/assignments"><i class="bi bi-file-earmark-text me-2"></i>Assignments</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/exams"><i class="bi bi-journal-check me-2"></i>Exams</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/projects"><i class="bi bi-code-square me-2"></i>Projects</a></li>
+                <li class="nav-item"><a class="nav-link" href="/trainer/evaluations"><i class="bi bi-journal-bookmark-fill me-2"></i>Evaluations</a></li>
+                <li class="nav-item mt-4"><a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-left me-2"></i>Logout</a></li>
+            </ul>
+        </div>
+        <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-3">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Assignments</h1>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal" onclick="prepareCreateModal()"><i class="bi bi-plus-circle me-1"></i>Create Assignment</button>
+            </div>
+            <div id="loading" class="text-center py-5"><div class="spinner-border text-success"></div><p class="mt-2">Loading assignments...</p></div>
+            <div id="content" style="display:none;">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3"><h6 class="m-0 fw-bold text-success">Assignments List</h6></div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead><tr><th>Title</th><th>Batch</th><th>Due Date</th><th>Total Marks</th><th>Actions</th></tr></thead>
+                                <tbody id="assignmentsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Assignment Modal -->
+<div class="modal fade" id="createModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Create Assignment</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div id="createAlert" class="alert d-none"></div>
+        <div class="mb-3"><label class="form-label fw-bold">Batch</label><select class="form-select" id="createBatchId"></select></div>
+        <div class="mb-3"><label class="form-label fw-bold">Title</label><input type="text" class="form-control" id="createTitle" required></div>
+        <div class="mb-3"><label class="form-label fw-bold">Description</label><textarea class="form-control" id="createDesc" rows="4"></textarea></div>
+        <div class="mb-3"><label class="form-label fw-bold">Due Date</label><input type="datetime-local" class="form-control" id="createDueDate"></div>
+        <div class="mb-3"><label class="form-label fw-bold">Total Marks</label><input type="number" class="form-control" id="createMarks" value="100"></div>
+        
+        <!-- File Upload & Keywords -->
+        <div class="mb-3 border-top pt-3">
+            <label class="form-label fw-bold">Reference Document (PDF/Docx/Txt)</label>
+            <input type="file" class="form-control" id="createFile" accept=".pdf,.docx,.txt" onchange="extractKeywordsFromDoc()">
+            <div id="extractionStatus" class="form-text text-muted mt-1">Upload a file to extract evaluation keywords.</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Extracted Keywords (Click to edit, 'x' to remove)</label>
+            <div id="keywordsContainer" class="d-flex flex-wrap gap-2 p-2 border rounded bg-light" style="min-height: 45px;">
+                <span class="text-muted small">Keywords will be extracted from the uploaded document...</span>
+            </div>
+            <div class="input-group mt-2">
+                <input type="text" class="form-control form-control-sm" id="newKeywordInput" placeholder="Add custom keyword">
+                <button class="btn btn-outline-success btn-sm" type="button" onclick="addNewKeyword()">Add</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" onclick="createAssignment()">Create</button></div>
+</div></div></div>
+
+<!-- Submissions Modal -->
+<div class="modal fade" id="submissionsModal" tabindex="-1"><div class="modal-dialog modal-xl"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Submissions</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead><tr><th>Student</th><th>Submission Date</th><th>Answer</th><th>Obtained Marks</th><th>Feedback</th><th>Action</th></tr></thead>
+                <tbody id="submissionsTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div></div></div>
+
+<!-- Grade Modal -->
+<div class="modal fade" id="gradeModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Grade Submission</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <div id="gradeAlert" class="alert d-none"></div>
+        <input type="hidden" id="gradeSubmissionId">
+        <div class="mb-3"><label class="form-label">Marks Obtained</label><input type="number" class="form-control" id="gradeMarks" required></div>
+        <div class="mb-3"><label class="form-label">Feedback</label><textarea class="form-control" id="gradeFeedback" rows="4"></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button class="btn btn-success" onclick="gradeSubmission()">Save Grade</button></div>
+</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function logout(){fetch('/api/auth/logout',{method:'POST',credentials:'include'}).then(()=>{window.location.href='/login'}).catch(()=>{window.location.href='/login'})}
+    let batches = [];
+    let extractedKeywords = [];
+    let extractedText = '';
+
+    async function init(){
+        try {
+            const res = await fetch('/api/trainer/batches', {credentials:'include'});
+            if (res.status === 401 || res.status === 403) { window.location.href = '/login'; return; }
+            batches = await res.json();
+            const sel = document.getElementById('createBatchId');
+            sel.innerHTML = '<option value="">-- Select Batch --</option>';
+            batches.forEach(b => { sel.innerHTML += `<option value="${b.id}">${b.batchName}</option>`; });
+            load();
+        } catch(e) { console.error(e); }
+    }
+
+    async function load(){
+        try {
+            const res = await fetch('/api/trainer/assignments', {credentials:'include'});
+            const data = await res.json();
+            const tbody = document.getElementById('assignmentsTable');
+            tbody.innerHTML = '';
+            data.forEach(a => {
+                const batchName = batches.find(b => b.id === a.batchId)?.batchName || 'Batch ' + a.batchId;
+                tbody.innerHTML += `
+                <tr>
+                    <td><strong>${a.title||''}</strong></td>
+                    <td>${batchName}</td>
+                    <td>${a.dueDate||'-'}</td>
+                    <td>${a.totalMarks||'-'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info text-white me-1" onclick="viewSubmissions(${a.id})"><i class="bi bi-eye me-1"></i>Submissions</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAssignment(${a.id})"><i class="bi bi-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+        } catch(e) { console.error(e); }
+        document.getElementById('loading').style.display='none';document.getElementById('content').style.display='';
+    }
+
+    function prepareCreateModal() {
+        document.getElementById('createTitle').value = '';
+        document.getElementById('createDesc').value = '';
+        document.getElementById('createDueDate').value = '';
+        document.getElementById('createMarks').value = '100';
+        document.getElementById('createFile').value = '';
+        document.getElementById('extractionStatus').innerHTML = 'Upload a file to extract evaluation keywords.';
+        extractedKeywords = [];
+        extractedText = '';
+        renderKeywords();
+    }
+
+    async function extractKeywordsFromDoc() {
+        const fileInput = document.getElementById('createFile');
+        const statusDiv = document.getElementById('extractionStatus');
+        if (!fileInput.files || fileInput.files.length === 0) return;
+        
+        statusDiv.innerHTML = `<span class="spinner-border spinner-border-sm text-success" role="status"></span> Extracting keywords...`;
+        
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+        
+        try {
+            const res = await fetch('/api/trainer/assignments/extract-keywords', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+            });
+            if (res.ok) {
+                const data = await res.json();
+                extractedText = data.text || '';
+                extractedKeywords = data.keywords || [];
+                renderKeywords();
+                statusDiv.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill"></i> Keywords successfully extracted!</span>`;
+            } else {
+                statusDiv.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle-fill"></i> Keyword extraction failed.</span>`;
+            }
+        } catch(e) {
+            console.error(e);
+            statusDiv.innerHTML = `<span class="text-danger"><i class="bi bi-x-circle-fill"></i> Error extracting keywords.</span>`;
+        }
+    }
+
+    function renderKeywords() {
+        const container = document.getElementById('keywordsContainer');
+        container.innerHTML = '';
+        if (extractedKeywords.length === 0) {
+            container.innerHTML = '<span class="text-muted small">Keywords will be extracted from the uploaded document...</span>';
+            return;
+        }
+        extractedKeywords.forEach((kw, idx) => {
+            container.innerHTML += `
+                <span class="badge bg-success d-flex align-items-center gap-1 p-2" style="font-size:0.85rem;">
+                    <span contenteditable="true" onblur="editKeyword(${idx}, this.innerText)" class="pe-1 text-white">${kw}</span>
+                    <i class="bi bi-x-circle-fill text-white-50" onclick="removeKeyword(${idx})" style="cursor:pointer;" title="Remove"></i>
+                </span>
+            `;
+        });
+    }
+
+    function addNewKeyword() {
+        const input = document.getElementById('newKeywordInput');
+        const val = input.value.trim();
+        if (val && !extractedKeywords.includes(val)) {
+            extractedKeywords.push(val);
+            renderKeywords();
+            input.value = '';
+        }
+    }
+
+    function removeKeyword(idx) {
+        extractedKeywords.splice(idx, 1);
+        renderKeywords();
+    }
+
+    function editKeyword(idx, newText) {
+        const cleaned = newText.trim();
+        if (cleaned) {
+            extractedKeywords[idx] = cleaned;
+        } else {
+            extractedKeywords.splice(idx, 1);
+        }
+        renderKeywords();
+    }
+
+    async function createAssignment(){
+        const batchId = document.getElementById('createBatchId').value;
+        const title = document.getElementById('createTitle').value;
+        const description = document.getElementById('createDesc').value;
+        const dueDate = document.getElementById('createDueDate').value;
+        const totalMarks = document.getElementById('createMarks').value;
+
+        if(!batchId || !title) { alert('Batch and Title are required'); return; }
+
+        try {
+            const res = await fetch('/api/trainer/assignments', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    batchId: parseInt(batchId), 
+                    title, 
+                    description, 
+                    dueDate, 
+                    totalMarks: parseInt(totalMarks),
+                    requiredKeywords: extractedKeywords.join(','),
+                    trainerContent: extractedText
+                })
+            });
+            if(res.ok){
+                bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
+                load();
+                alert('Assignment created successfully!');
+            } else {
+                alert('Failed to create assignment');
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    async function deleteAssignment(id) {
+        if (!confirm('Are you sure you want to delete this assignment? All student submissions will be cascading-deleted.')) return;
+        try {
+            const res = await fetch(`/api/trainer/assignments/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                load();
+                alert('Assignment deleted successfully!');
+            } else {
+                alert('Failed to delete assignment. Are you authorized?');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    async function viewSubmissions(assignmentId){
+        const tbody = document.getElementById('submissionsTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm text-success"></div> Loading...</td></tr>';
+        new bootstrap.Modal(document.getElementById('submissionsModal')).show();
+        try {
+            const res = await fetch(`/api/trainer/assignments/${assignmentId}/submissions`, {credentials:'include'});
+            if(res.ok){
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if(data.length === 0){
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No submissions yet.</td></tr>';
+                } else {
+                    data.forEach(s => {
+                        tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${s.studentName||''}</strong></td>
+                            <td>${s.submissionDate?new Date(s.submissionDate).toLocaleString():'-'}</td>
+                            <td><pre class="m-0 bg-light p-1" style="max-height: 80px; overflow-y:auto; font-size:0.8rem;">${s.answer||''}</pre></td>
+                            <td>${s.marksObtained !== null ? s.marksObtained : '<span class="badge bg-secondary">Ungraded</span>'}</td>
+                            <td>${s.feedback||'-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="openGrade(${s.id}, ${s.marksObtained||0}, '${(s.feedback||'').replace(/'/g,"\\'")}')"><i class="bi bi-check2-square"></i> Grade</button>
+                            </td>
+                        </tr>`;
+                    });
+                }
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function openGrade(id, marks, feedback) {
+        document.getElementById('gradeSubmissionId').value = id;
+        document.getElementById('gradeMarks').value = marks;
+        document.getElementById('gradeFeedback').value = feedback;
+        new bootstrap.Modal(document.getElementById('gradeModal')).show();
+    }
+
+    async function gradeSubmission(){
+        const id = document.getElementById('gradeSubmissionId').value;
+        const marks = document.getElementById('gradeMarks').value;
+        const feedback = document.getElementById('gradeFeedback').value;
+        try {
+            const res = await fetch(`/api/trainer/assignments/submissions/${id}/grade`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ marks: parseInt(marks), feedback })
+            });
+            if(res.ok){
+                bootstrap.Modal.getInstance(document.getElementById('gradeModal')).hide();
+                bootstrap.Modal.getInstance(document.getElementById('submissionsModal')).hide();
+                load();
+                alert('Submission graded successfully!');
+            } else {
+                alert('Failed to save grade');
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    init();
+</script>
+</body>
+</html>
