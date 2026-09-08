@@ -159,12 +159,6 @@ The application uses Gmail SMTP for sending emails (password reset, notification
 
 ---
 
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
 ## 👤 Author
 
 **Mohanraj Kulanthaivel**
