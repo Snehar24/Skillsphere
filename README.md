@@ -158,9 +158,3 @@ The application uses Gmail SMTP for sending emails (password reset, notification
 3. Set the `MAIL_USERNAME` and `MAIL_PASSWORD` environment variables
 
 ---
-
-## 👤 Author
-
-**Mohanraj Kulanthaivel**
-- GitHub: [@ITMohanraj](https://github.com/ITMohanraj)
-- Email: mohanraj.k1110@gmail.com
