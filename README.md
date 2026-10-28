@@ -148,13 +148,3 @@ SkillSphere/
 | **STUDENT**| Course access, submissions, and payments           |
 
 ---
-
-## 📬 Email Configuration
-
-The application uses Gmail SMTP for sending emails (password reset, notifications). To configure:
-
-1. Enable **2-Step Verification** on your Google account
-2. Generate an **App Password** from Google Account settings
-3. Set the `MAIL_USERNAME` and `MAIL_PASSWORD` environment variables
-
----
